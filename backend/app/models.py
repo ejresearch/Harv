@@ -1,11 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from app.database import Base
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
@@ -13,27 +10,32 @@ class User(Base):
     onboarding_data = Column(Text)
 
 class Module(Base):
-    __tablename__ = 'modules'
+    __tablename__ = "modules"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text)
-    system_prompt = Column(Text)
     resources = Column(Text)
+    system_prompt = Column(Text)
 
 class Conversation(Base):
-    __tablename__ = 'conversations'
+    __tablename__ = "conversations"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    module_id = Column(Integer, ForeignKey('modules.id'))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    module_id = Column(Integer, ForeignKey("modules.id"))
     messages_json = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Document(Base):
+    __tablename__ = "documents"
+    id = Column(Integer, primary_key=True, index=True)
+    module_id = Column(Integer, ForeignKey("modules.id"))
+    filename = Column(String)
+    content = Column(Text)
 
 class MemorySummary(Base):
-    __tablename__ = 'memory_summaries'
+    __tablename__ = "memory_summaries"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    module_id = Column(Integer, ForeignKey('modules.id'))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    module_id = Column(Integer, ForeignKey("modules.id"))
     what_learned = Column(Text)
     how_learned = Column(Text)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
