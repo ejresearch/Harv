@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy.sql import func
 from app.database import Base
 
 class User(Base):
@@ -16,6 +17,15 @@ class Module(Base):
     description = Column(Text)
     resources = Column(Text)
     system_prompt = Column(Text)
+    
+    # New fields for GPT configuration
+    module_prompt = Column(Text)
+    system_corpus = Column(Text)
+    module_corpus = Column(Text)
+    dynamic_corpus = Column(Text)
+    api_endpoint = Column(String, default="https://api.openai.com/v1/chat/completions")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -30,6 +40,7 @@ class Document(Base):
     module_id = Column(Integer, ForeignKey("modules.id"))
     filename = Column(String)
     content = Column(Text)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class MemorySummary(Base):
     __tablename__ = "memory_summaries"
@@ -38,4 +49,3 @@ class MemorySummary(Base):
     module_id = Column(Integer, ForeignKey("modules.id"))
     what_learned = Column(Text)
     how_learned = Column(Text)
-

@@ -1,5 +1,3 @@
-# backend/app/endpoints/chat.py
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -40,8 +38,34 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
 
     messages.append({"role": "user", "content": req.message})
 
-    # Compose system prompt + documents
-    full_prompt = f"{module.system_prompt}\n\nDocuments:\n{docs_text}"
+    # Compose system prompt with module configuration
+    system_parts = []
+    
+    # Add system prompt (Socratic methodology)
+    if module.system_prompt:
+        system_parts.append(module.system_prompt)
+    
+    # Add module-specific prompt
+    if module.module_prompt:
+        system_parts.append(f"\nModule Focus:\n{module.module_prompt}")
+    
+    # Add system corpus (course-wide knowledge)
+    if module.system_corpus:
+        system_parts.append(f"\nCourse Knowledge Base:\n{module.system_corpus}")
+    
+    # Add module corpus (module-specific content)
+    if module.module_corpus:
+        system_parts.append(f"\nModule Resources:\n{module.module_corpus}")
+    
+    # Add dynamic corpus (current events)
+    if module.dynamic_corpus:
+        system_parts.append(f"\nCurrent Examples & Events:\n{module.dynamic_corpus}")
+    
+    # Add uploaded documents
+    if docs_text:
+        system_parts.append(f"\nUploaded Documents:\n{docs_text}")
+
+    full_prompt = "\n\n".join(system_parts) if system_parts else "You are a helpful AI assistant."
     full_messages = [{"role": "system", "content": full_prompt}] + messages
 
     # Call OpenAI
@@ -65,4 +89,3 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
 
     db.commit()
     return {"reply": gpt_reply}
-
