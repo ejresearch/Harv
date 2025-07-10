@@ -1,31 +1,49 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.endpoints import auth, modules, chat, memory, documents
+from app.endpoints import auth, modules, chat, memory, documents, progress
+from datetime import datetime
 
 app = FastAPI(
-    title="Harv Backend",
-    description="Lightweight, RAG-ready backend for GPT-powered modules",
-    version="1.0.0"
+    title="Harv Backend Enhanced",
+    description="Enhanced GPT-powered modules with JWT auth and 4-layer memory",
+    version="1.1.0"
 )
 
-# Optional: configure CORS if you expect to call the backend from a frontend on a different domain.
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change this to your frontend domain in production
+    allow_origins=["*"],  # Configure for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register all routers
+# Include all routers
 app.include_router(auth.router)
 app.include_router(modules.router)
 app.include_router(chat.router)
 app.include_router(memory.router)
 app.include_router(documents.router)
+app.include_router(progress.router)  # NEW
 
-# Health check endpoint
+# Health check endpoints
 @app.get("/")
 def root():
-    return {"message": "Harv backend is running."}
+    return {
+        "message": "Harv backend enhanced with Priority 1 features",
+        "version": "1.1.0",
+        "features": [
+            "JWT Authentication",
+            "4-Layer Memory System", 
+            "Progress Tracking",
+            "Enhanced Database Schema",
+            "Backward Compatible"
+        ]
+    }
 
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat()
+    }
