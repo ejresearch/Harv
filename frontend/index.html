@@ -1,10 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>Primer Initiative</title>
+    
+    <!-- Nunito Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configure Tailwind for our custom colors -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primer-green': '#3E5641',
+              'primer-beige': '#D6CDB8',
+              'primer-black': '#222222'
+            },
+            fontFamily: {
+              'nunito': ['Nunito', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
