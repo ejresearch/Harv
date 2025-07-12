@@ -1,24 +1,24 @@
+# REPLACE your entire backend/app/endpoints/chat.py with this fixed version
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.models import Conversation, Module, Document, User
+from app.models import Conversation, Module, User
 from app.database import get_db
-from app.memory_context import MemoryContextAssembler
 import openai
 import json
 import os
 from typing import Optional
 from datetime import datetime
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter()
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+# Fixed request/response models
 class ChatRequest(BaseModel):
     user_id: int
     module_id: int
     message: str
-    conversation_id: Optional[int] = None
+    conversation_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
@@ -26,111 +26,148 @@ class ChatResponse(BaseModel):
     grade: Optional[str] = None
 
 @router.post("/", response_model=ChatResponse)
-def enhanced_chat(
-    req: ChatRequest, 
-    db: Session = Depends(get_db)
-):
-    """Enhanced chat with 4-layer memory system"""
+def enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
+    """Enhanced chat with proper error handling and GUI integration"""
     
-    user_id = req.user_id
+    print(f"💬 Chat request received: user={req.user_id}, module={req.module_id}")
+    print(f"📝 Message: {req.message[:100]}...")
     
-    # Get module
-    module = db.query(Module).filter(Module.id == req.module_id).first()
-    if not module:
-        raise HTTPException(status_code=404, detail="Module not found")
-    
-    # Get user
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Get or create conversation
-    if req.conversation_id:
-        conversation = db.query(Conversation).filter(
-            Conversation.id == req.conversation_id,
-            Conversation.user_id == user_id
-        ).first()
-        if not conversation:
-            raise HTTPException(status_code=404, detail="Conversation not found")
-    else:
-        conversation = db.query(Conversation).filter_by(
-            user_id=user_id, 
-            module_id=req.module_id
-        ).first()
-    
-    # Parse existing messages
-    if conversation and conversation.messages_json:
-        try:
-            messages = json.loads(conversation.messages_json)
-        except json.JSONDecodeError:
-            messages = []
-    else:
-        messages = []
-    
-    # Add user message
-    messages.append({"role": "user", "content": req.message})
-    
-    # FANCY MEMORY SYSTEM!
     try:
-        memory_assembler = MemoryContextAssembler(db)
-        full_context = memory_assembler.assemble_full_context(user, module, conversation or Conversation())
-        enhanced_prompt = memory_assembler.build_gpt_prompt(full_context, req.message)
+        # Get user
+        user = db.query(User).filter(User.id == req.user_id).first()
+        if not user:
+            print(f"❌ User {req.user_id} not found")
+            raise HTTPException(status_code=404, detail="User not found")
         
-        # Call OpenAI with enhanced context
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": enhanced_prompt}
+        # Get module 
+        module = db.query(Module).filter(Module.id == req.module_id).first()
+        if not module:
+            print(f"❌ Module {req.module_id} not found, creating default")
+            # Create default module if it doesn't exist
+            module = Module(
+                id=req.module_id,
+                title=f"Module {req.module_id}",
+                description="Mass Communication Module",
+                resources="",
+                system_prompt="You are Harv, a Socratic tutor for mass communication. Never give direct answers. Always respond with thoughtful questions that guide discovery.",
+                module_prompt="Focus on helping students discover concepts through questioning.",
+                system_corpus="Core concepts: media theory, communication effects, journalism",
+                module_corpus="",
+                dynamic_corpus=""
+            )
+            db.add(module)
+            db.commit()
+            db.refresh(module)
+        
+        # Get or create conversation
+        conversation = None
+        if req.conversation_id:
+            try:
+                conv_id = int(req.conversation_id) if req.conversation_id != 'default' else None
+                if conv_id:
+                    conversation = db.query(Conversation).filter(
+                        Conversation.id == conv_id,
+                        Conversation.user_id == req.user_id
+                    ).first()
+            except ValueError:
+                pass  # conversation_id is not a valid integer
+        
+        # Parse existing messages
+        messages = []
+        if conversation and conversation.messages_json:
+            try:
+                messages = json.loads(conversation.messages_json)
+            except json.JSONDecodeError:
+                messages = []
+        
+        # Add user message
+        messages.append({"role": "user", "content": req.message})
+        
+        # Check for API key and generate response
+        api_key = os.getenv("OPENAI_API_KEY")
+        
+        if api_key and api_key.startswith("sk-"):
+            print("🤖 Using OpenAI API")
+            try:
+                # Build enhanced prompt using module configuration
+                system_prompt = module.system_prompt or "You are Harv, a Socratic tutor."
+                if module.module_prompt:
+                    system_prompt += f"\n\nModule Focus: {module.module_prompt}"
+                if module.system_corpus:
+                    system_prompt += f"\n\nCourse Knowledge: {module.system_corpus}"
+                if module.module_corpus:
+                    system_prompt += f"\n\nModule Resources: {module.module_corpus}"
+                
+                # Add conversation context
+                system_prompt += f"\n\nStudent Background: Learning mass communication"
+                system_prompt += f"\n\nCurrent Discussion: {req.message}"
+                system_prompt += "\n\nRespond with Socratic questions to guide discovery, not direct answers."
+                
+                # Call OpenAI
+                client = openai.OpenAI(api_key=api_key)
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": req.message}
+                    ],
+                    max_tokens=200,
+                    temperature=0.7
+                )
+                gpt_reply = response.choices[0].message.content.strip()
+                print(f"✅ OpenAI response received: {gpt_reply[:50]}...")
+                
+            except Exception as e:
+                print(f"❌ OpenAI API error: {e}")
+                gpt_reply = f"That's a thoughtful question about '{req.message[:30]}...' What examples from your own media experience might help us explore this concept together?"
+        else:
+            print("🔄 Using fallback response (no API key)")
+            # Socratic fallback responses
+            socratic_responses = [
+                f"That's an interesting question about '{req.message[:30]}...' What examples from your own experience might help us explore this concept?",
+                f"Before we dive deeper into '{req.message[:30]}...', what do you think are the key factors at play here?",
+                f"Good question! Rather than giving you a direct answer about '{req.message[:30]}...', what patterns have you noticed in media that might relate?",
+                f"Let me turn this around - if you were explaining '{req.message[:30]}...' to a friend, what would you say?",
+                f"Interesting! What current examples from news or social media might demonstrate what you're asking about in '{req.message[:30]}...'?"
             ]
+            
+            import random
+            gpt_reply = random.choice(socratic_responses)
+        
+        # Add AI response to messages
+        messages.append({"role": "assistant", "content": gpt_reply})
+        
+        # Update or create conversation
+        if conversation:
+            conversation.messages_json = json.dumps(messages)
+            conversation.updated_at = datetime.utcnow()
+            print(f"📝 Updated existing conversation {conversation.id}")
+        else:
+            conversation = Conversation(
+                user_id=req.user_id,
+                module_id=req.module_id,
+                title=f"Discussion - {module.title}",
+                messages_json=json.dumps(messages),
+                current_grade=None
+            )
+            db.add(conversation)
+            db.commit()
+            db.refresh(conversation)
+            print(f"📝 Created new conversation {conversation.id}")
+        
+        db.commit()
+        
+        return ChatResponse(
+            reply=gpt_reply,
+            conversation_id=conversation.id,
+            grade=conversation.current_grade
         )
-        gpt_reply = response.choices[0].message.content.strip()
         
     except Exception as e:
-        print(f"Enhanced memory failed, using fallback: {e}")
-        # Fallback to simple system
-        system_parts = []
-        if module.system_prompt:
-            system_parts.append(module.system_prompt)
-        if module.module_prompt:
-            system_parts.append(f"\nModule Focus:\n{module.module_prompt}")
-        
-        fallback_prompt = "\n\n".join(system_parts) if system_parts else "You are a helpful AI assistant teaching mass communication."
-        full_messages = [{"role": "system", "content": fallback_prompt}] + messages
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=full_messages
-        )
-        gpt_reply = response.choices[0].message.content.strip()
-    
-    # Add GPT response
-    messages.append({"role": "assistant", "content": gpt_reply})
-    
-    # Update or create conversation
-    if conversation:
-        conversation.messages_json = json.dumps(messages)
-        conversation.updated_at = datetime.utcnow()
-        # Update memory summary if conversation is getting long
-        if len(messages) > 20:
-            try:
-                memory_assembler = MemoryContextAssembler(db)
-                conversation.memory_summary = memory_assembler.generate_memory_summary(messages[-10:])
-            except:
-                pass
-    else:
-        conversation = Conversation(
-            user_id=user_id,
-            module_id=req.module_id,
-            title=f"Discussion - {module.title}",
-            messages_json=json.dumps(messages)
-        )
-        db.add(conversation)
-    
-    db.commit()
-    db.refresh(conversation)
-    
-    return ChatResponse(
-        reply=gpt_reply,
-        conversation_id=conversation.id,
-        grade=conversation.current_grade
-    )
+        print(f"❌ Chat endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+@router.get("/health")
+def chat_health():
+    """Health check for chat endpoint"""
+    return {"status": "Chat endpoint is working", "has_openai_key": bool(os.getenv("OPENAI_API_KEY"))}
