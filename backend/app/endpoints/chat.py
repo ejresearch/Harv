@@ -1,10 +1,14 @@
-# REPLACE your entire backend/app/endpoints/chat.py with this fixed version
+"""
+Enhanced Chat Endpoint with Memory Integration
+Replace your entire backend/app/endpoints/chat.py with this file
+"""
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.models import Conversation, Module, User
 from app.database import get_db
+from app.memory_context import MemoryContextAssembler
 import openai
 import json
 import os
@@ -13,7 +17,6 @@ from datetime import datetime
 
 router = APIRouter()
 
-# Fixed request/response models
 class ChatRequest(BaseModel):
     user_id: int
     module_id: int
@@ -26,20 +29,19 @@ class ChatResponse(BaseModel):
     grade: Optional[str] = None
 
 @router.post("/", response_model=ChatResponse)
-def enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
-    """Enhanced chat with proper error handling and GUI integration"""
+def memory_enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
+    """Memory-enhanced chat with 4-layer context integration"""
     
-    print(f"💬 Chat request received: user={req.user_id}, module={req.module_id}")
+    print(f"💬 Memory-enhanced chat: user={req.user_id}, module={req.module_id}")
     print(f"📝 Message: {req.message[:100]}...")
     
     try:
-        # Get user
+        # Get user and module
         user = db.query(User).filter(User.id == req.user_id).first()
         if not user:
             print(f"❌ User {req.user_id} not found")
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Get module 
         module = db.query(Module).filter(Module.id == req.module_id).first()
         if not module:
             print(f"❌ Module {req.module_id} not found, creating default")
@@ -87,48 +89,50 @@ def enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
         api_key = os.getenv("OPENAI_API_KEY")
         
         if api_key and api_key.startswith("sk-"):
-            print("🤖 Using OpenAI API")
+            print("🧠 Using memory-enhanced GPT response")
             try:
-                # Build enhanced prompt using module configuration
-                system_prompt = module.system_prompt or "You are Harv, a Socratic tutor."
-                if module.module_prompt:
-                    system_prompt += f"\n\nModule Focus: {module.module_prompt}"
-                if module.system_corpus:
-                    system_prompt += f"\n\nCourse Knowledge: {module.system_corpus}"
-                if module.module_corpus:
-                    system_prompt += f"\n\nModule Resources: {module.module_corpus}"
+                # Assemble memory context
+                memory_assembler = MemoryContextAssembler(db)
+                memory_context = memory_assembler.assemble_full_context(
+                    user, module, conversation or Conversation()
+                )
                 
-                # Add conversation context
-                system_prompt += f"\n\nStudent Background: Learning mass communication"
-                system_prompt += f"\n\nCurrent Discussion: {req.message}"
-                system_prompt += "\n\nRespond with Socratic questions to guide discovery, not direct answers."
+                # Build memory-enhanced prompt
+                enhanced_prompt = memory_assembler.build_gpt_prompt(
+                    memory_context, req.message
+                )
                 
-                # Call OpenAI
+                print(f"📚 Memory context assembled: {len(enhanced_prompt)} chars")
+                
+                # Call OpenAI with memory context
                 client = openai.OpenAI(api_key=api_key)
                 response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": system_prompt},
+                        {"role": "system", "content": enhanced_prompt[:8000]},  # Truncate if too long
                         {"role": "user", "content": req.message}
                     ],
-                    max_tokens=200,
+                    max_tokens=300,
                     temperature=0.7
                 )
                 gpt_reply = response.choices[0].message.content.strip()
-                print(f"✅ OpenAI response received: {gpt_reply[:50]}...")
+                print(f"✅ Memory-enhanced response generated: {gpt_reply[:50]}...")
                 
             except Exception as e:
-                print(f"❌ OpenAI API error: {e}")
+                print(f"❌ Memory-enhanced GPT error: {e}")
+                # Fallback to basic Socratic response
                 gpt_reply = f"That's a thoughtful question about '{req.message[:30]}...' What examples from your own media experience might help us explore this concept together?"
         else:
-            print("🔄 Using fallback response (no API key)")
+            print("🔄 Using fallback Socratic response (no API key)")
             # Socratic fallback responses
             socratic_responses = [
                 f"That's an interesting question about '{req.message[:30]}...' What examples from your own experience might help us explore this concept?",
                 f"Before we dive deeper into '{req.message[:30]}...', what do you think are the key factors at play here?",
                 f"Good question! Rather than giving you a direct answer about '{req.message[:30]}...', what patterns have you noticed in media that might relate?",
                 f"Let me turn this around - if you were explaining '{req.message[:30]}...' to a friend, what would you say?",
-                f"Interesting! What current examples from news or social media might demonstrate what you're asking about in '{req.message[:30]}...'?"
+                f"Interesting! What current examples from news or social media might demonstrate what you're asking about in '{req.message[:30]}...'?",
+                f"That's a perceptive observation. What questions does this raise for you about how media shapes our understanding?",
+                f"Excellent thinking! How might this principle apply differently across various demographic groups or cultures?"
             ]
             
             import random
@@ -155,6 +159,18 @@ def enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
             db.refresh(conversation)
             print(f"📝 Created new conversation {conversation.id}")
         
+        # Check if conversation should trigger memory extraction
+        message_count = len(messages)
+        if message_count >= 10 and message_count % 5 == 0:  # Every 5 messages after 10
+            print(f"🧠 Triggering memory extraction for conversation {conversation.id}")
+            try:
+                memory_assembler = MemoryContextAssembler(db)
+                summary = memory_assembler.generate_memory_summary(messages)
+                conversation.memory_summary = summary
+                print(f"✅ Memory summary generated: {summary[:100]}...")
+            except Exception as e:
+                print(f"⚠️ Memory extraction failed: {e}")
+        
         db.commit()
         
         return ChatResponse(
@@ -164,10 +180,14 @@ def enhanced_chat(req: ChatRequest, db: Session = Depends(get_db)):
         )
         
     except Exception as e:
-        print(f"❌ Chat endpoint error: {e}")
+        print(f"❌ Memory-enhanced chat error: {e}")
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 @router.get("/health")
 def chat_health():
     """Health check for chat endpoint"""
-    return {"status": "Chat endpoint is working", "has_openai_key": bool(os.getenv("OPENAI_API_KEY"))}
+    return {
+        "status": "Chat endpoint with memory system is working", 
+        "has_openai_key": bool(os.getenv("OPENAI_API_KEY")),
+        "memory_system": "active"
+    }
