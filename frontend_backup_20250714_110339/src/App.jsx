@@ -1,4 +1,3 @@
-import ApiService from './services/api';
 // REPLACE your entire frontend/src/App.jsx with this fixed version
 // This fixes the authentication context error you're seeing
 

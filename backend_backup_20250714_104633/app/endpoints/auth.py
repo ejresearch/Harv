@@ -12,7 +12,7 @@ from app.auth import (
     get_current_user, verify_token, get_user_by_id
 )
 from app.schemas import (
-    UserRegistrationRequest, UserCreate, UserLoginRequest, TokenRefreshRequest,
+    UserRegistrationRequest, UserLoginRequest, TokenRefreshRequest,
     UserResponse, MessageResponse
 )
 from app.models import User, OnboardingSurvey
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register")
 async def register_user(
-    request: UserRegistrationRequest, UserCreate,
+    request: UserRegistrationRequest,
     db: Session = Depends(get_db)
 ):
     """Register new user account - FIXED VERSION"""
@@ -232,7 +232,7 @@ async def auth_health():
 
 @router.post("/test-register")
 async def test_register(
-    request: UserRegistrationRequest, UserCreate,
+    request: UserRegistrationRequest,
     db: Session = Depends(get_db)
 ):
     """Simplified test registration endpoint"""
