@@ -22,9 +22,15 @@ from app.auth import (
 
 # Import all endpoint routers
 from app.endpoints.modules import router as modules_router
-from app.endpoints.chat import router as chat_router
+try:
+    from app.endpoints.chat import router as chat_router
+except ImportError:
+    from app.routers.chat import router as chat_router
 from app.endpoints.memory import router as memory_router
-from app.endpoints.auth import router as auth_router
+try:
+    from app.endpoints.auth import router as auth_router
+except ImportError:
+    from app.routers.auth import router as auth_router
 
 # Create FastAPI app
 app = FastAPI(
