@@ -1,6 +1,0 @@
-harv_venv/
-__pycache__/
-*.pyc
-node_modules/
-dist/
-.env
