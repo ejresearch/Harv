@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Primer Initiative - Memory-Aware Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Fix right side display issues */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            flex-shrink: 0;
+            width: 100%;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .content-area {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        .sidebar {
+            width: 300px;
+            min-width: 300px;
+            max-width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            height: calc(100vh - 80px);
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            height: calc(100vh - 80px);
+            max-width: calc(100vw - 300px);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            resize: vertical;
+        }
+        
+        .form-group select {
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+        }
+        
+        .context-toggles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .test-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .test-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .test-response {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+            min-height: 100px;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                width: 250px;
+                min-width: 250px;
+            }
+            
+            .main-content {
+                max-width: calc(100vw - 250px);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content-area {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 200px;
+            }
+            
+            .main-content {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+    
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">PRIMER INITIATIVE - MEMORY-AWARE CONFIGURATION</h1>
+            <p class="text-gray-600">Configure Socratic GPT tutors with 3-layer memory system for personalized learning</p>
+            <div class="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                <span class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    System Memory (Cross-course)
+                </span>
+                <span class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    Module Memory (Current module)
+                </span>
+                <span class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    Conversation Memory (Real-time)
+                </span>
+            </div>
+        </div>
+
+        <!-- Status Container -->
+        <div id="statusContainer"></div>
+
+        <!-- Module Selector & Memory Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <div class="flex-1 min-w-48">
+                    <label for="moduleSelector" class="block font-semibold mb-2 text-gray-700">Module</label>
+                    <select id="moduleSelector" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Loading modules...</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-6">
+                    <button id="editBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Edit</button>
+                    <button id="saveBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Save</button>
+                    <button id="cancelBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Cancel</button>
+                    <button id="testMemoryBtn" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Test Memory</button>
+                </div>
+            </div>
+
+            <!-- Memory Status Dashboard -->
+            <div id="memoryStatus" class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="exportedConversations">-</div>
+                    <div class="text-sm text-gray-600">Exported Conversations</div>
+                    <div class="text-xs text-gray-500">(System Memory Built)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="memorySummaries">-</div>
+                    <div class="text-sm text-gray-600">Memory Summaries</div>
+                    <div class="text-xs text-gray-500">(Learning Insights)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="activeConversations">-</div>
+                    <div class="text-sm text-gray-600">Active Conversations</div>
+                    <div class="text-xs text-gray-500">(Current Context)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Configuration Tabs -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6">
+                    <button class="tab-btn py-4 px-1 border-b-2 font-medium text-sm active" data-tab="socratic">
+                        Socratic Configuration
+                    </button>
+                    <button class="tab-btn py-4 px-1 border-b-2 font-medium text-sm" data-tab="memory">
+                        Memory System
+                    </button>
+                    <button class="tab-btn py-4 px-1 border-b-2 font-medium text-sm" data-tab="context">
+                        Context Rules
+                    </button>
+                    <button class="tab-btn py-4 px-1 border-b-2 font-medium text-sm" data-tab="preview">
+                        Memory Preview
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Socratic Configuration Tab -->
+            <div id="socratic-tab" class="tab-content p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Socratic Teaching Configuration</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="mb-4">
+                        <label for="systemPrompt" class="block font-semibold mb-2 text-gray-700">
+                            Socratic System Prompt
+                            <span class="text-sm font-normal text-gray-500">(How Harv should teach)</span>
+                        </label>
+                        <textarea id="systemPrompt" rows="6" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="You are Harv, a Socratic tutor. Never give direct answers..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="modulePrompt" class="block font-semibold mb-2 text-gray-700">
+                            Module-Specific Prompt
+                            <span class="text-sm font-normal text-gray-500">(Module focus area)</span>
+                        </label>
+                        <textarea id="modulePrompt" rows="6" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="For this module, focus on helping students discover..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="systemCorpus" class="block font-semibold mb-2 text-gray-700">
+                            Course Knowledge Base
+                            <span class="text-sm font-normal text-gray-500">(Course-wide concepts)</span>
+                        </label>
+                        <textarea id="systemCorpus" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Core mass communication theories: gatekeeping, agenda-setting..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="moduleCorpus" class="block font-semibold mb-2 text-gray-700">
+                            Module Resources
+                            <span class="text-sm font-normal text-gray-500">(Module-specific content)</span>
+                        </label>
+                        <textarea id="moduleCorpus" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="This module covers: definitions, key theories, examples..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="dynamicCorpus" class="block font-semibold mb-2 text-gray-700">
+                            Current Events & Examples
+                            <span class="text-sm font-normal text-gray-500">(Keep updated regularly)</span>
+                        </label>
+                        <textarea id="dynamicCorpus" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Recent news examples, current social media trends..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="apiEndpoint" class="block font-semibold mb-2 text-gray-700">API Endpoint</label>
+                        <input type="text" id="apiEndpoint" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="https://api.openai.com/v1/chat/completions">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory System Tab -->
+            <div id="memory-tab" class="tab-content p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Memory System Configuration</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-800">Memory Extraction Settings</h3>
+                        
+                        <div>
+                            <label for="memoryExtractionPrompt" class="block font-semibold mb-2 text-gray-700">
+                                Memory Extraction Prompt
+                                <span class="text-sm font-normal text-gray-500">(How to analyze conversations)</span>
+                            </label>
+                            <textarea id="memoryExtractionPrompt" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Analyze this conversation to extract: concepts mastered, learning breakthroughs, effective teaching methods..."></textarea>
+                        </div>
+
+                        <div>
+                            <label for="masteryTriggers" class="block font-semibold mb-2 text-gray-700">
+                                Mastery Detection Triggers
+                                <span class="text-sm font-normal text-gray-500">(Phrases that indicate understanding)</span>
+                            </label>
+                            <textarea id="masteryTriggers" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="oh I see, that makes sense, so it means, I understand now"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="confusionTriggers" class="block font-semibold mb-2 text-gray-700">
+                                Confusion Detection Triggers
+                                <span class="text-sm font-normal text-gray-500">(Phrases that indicate struggle)</span>
+                            </label>
+                            <textarea id="confusionTriggers" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="I don't understand, this is confusing, what do you mean, I'm lost"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-800">Memory Integration Rules</h3>
+                        
+                        <div>
+                            <label for="memoryContextTemplate" class="block font-semibold mb-2 text-gray-700">
+                                Memory Context Template
+                                <span class="text-sm font-normal text-gray-500">(How to use previous learning)</span>
+                            </label>
+                            <textarea id="memoryContextTemplate" rows="4" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Remember, this student previously mastered {concepts} and responds well to {teaching_methods}. Build on their understanding of {key_insights}..."></textarea>
+                        </div>
+
+                        <div>
+                            <label for="crossModuleReferences" class="block font-semibold mb-2 text-gray-700">
+                                Cross-Module Reference Style
+                                <span class="text-sm font-normal text-gray-500">(How to reference previous modules)</span>
+                            </label>
+                            <textarea id="crossModuleReferences" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Remember when you discovered {concept} in Module {number}? How might that connect to what we're exploring now?"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="memoryWeight" class="block font-semibold mb-2 text-gray-700">Memory Context Weight</label>
+                            <select id="memoryWeight" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled>
+                                <option value="light">Light (Recent conversation focus)</option>
+                                <option value="balanced" selected>Balanced (Equal weight all memory layers)</option>
+                                <option value="heavy">Heavy (Strong emphasis on past learning)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Context Rules Tab -->
+            <div id="context-tab" class="tab-content p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Context Assembly Rules</h2>
+                
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">Context Toggle Settings</h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="includeSystemMemory" class="mr-2" checked disabled>
+                                    <span class="text-sm">Include System Memory (Cross-course learning)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="includeModuleProgress" class="mr-2" checked disabled>
+                                    <span class="text-sm">Include Module Progress</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="includeLearningStyle" class="mr-2" checked disabled>
+                                    <span class="text-sm">Include Learning Style Adaptation</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="includeConversationState" class="mr-2" checked disabled>
+                                    <span class="text-sm">Include Real-time Conversation State</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="includeRecentBreakthroughs" class="mr-2" checked disabled>
+                                    <span class="text-sm">Include Recent Learning Breakthroughs</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="updateMemoryOnResponse" class="mr-2" checked disabled>
+                                    <span class="text-sm">Update Memory After Each Response</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="trackUnderstandingLevel" class="mr-2" checked disabled>
+                                    <span class="text-sm">Track Understanding Level</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">Learning Style Adaptations</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block font-medium mb-1 text-gray-700">Visual Learners</label>
+                                    <textarea rows="2" class="w-full p-2 border border-gray-300 rounded disabled:bg-gray-100" disabled placeholder="Ask for examples, use 'imagine if', 'picture this', draw connections"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-medium mb-1 text-gray-700">Kinesthetic Learners</label>
+                                    <textarea rows="2" class="w-full p-2 border border-gray-300 rounded disabled:bg-gray-100" disabled placeholder="Use 'if you were to...', 'what actions would', hands-on scenarios"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-medium mb-1 text-gray-700">Auditory Learners</label>
+                                    <textarea rows="2" class="w-full p-2 border border-gray-300 rounded disabled:bg-gray-100" disabled placeholder="Use discussion, 'tell me about', 'how would you explain'"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Preview Tab -->
+            <div id="preview-tab" class="tab-content p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Memory Preview & Testing</h2>
+                
+                <div class="space-y-6">
+                    <div class="flex gap-4">
+                        <button id="generatePreviewBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400" disabled>
+                            Generate Memory Preview
+                        </button>
+                        <button id="testFullContextBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400" disabled>
+                            Test Full Context
+                        </button>
+                        <input type="number" id="testUserId" placeholder="User ID" value="1" class="px-3 py-2 border border-gray-300 rounded-md w-24">
+                    </div>
+
+                    <div id="memoryPreviewContainer" class="bg-gray-50 rounded-lg p-4 min-h-32">
+                        <div class="text-gray-500 italic">Select a module and click "Generate Memory Preview" to see full context...</div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-3">Test Message</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="testMessage" class="flex-1 p-3 border border-gray-300 rounded-md" placeholder="Enter test message to see memory-enhanced response..." disabled>
+                            <button id="sendTestBtn" class="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400" disabled>Send</button>
+                        </div>
+                    </div>
+
+                    <div id="testResponseContainer" class="bg-white border border-gray-200 rounded-lg p-4 min-h-24 hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">Memory-Enhanced Response:</h4>
+                        <div id="testResponse" class="text-gray-700"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Chat -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Test Socratic Tutoring</h2>
+            
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <input type="text" id="chatInput" class="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100" disabled placeholder="Enter test message...">
+                    <button id="sendBtn" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Send</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block font-semibold mb-2 text-gray-700">GPT Response</label>
+                <div id="chatHistory" class="p-4 border border-gray-200 rounded-md bg-gray-50 min-h-32 max-h-64 overflow-y-auto">
+                    <div class="text-gray-500 italic">Select a module to start testing...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MemoryAwareHarvGUI {
+            constructor() {
+                this.baseURL = 'http://127.0.0.1:8000';
+                this.currentModule = null;
+                this.isEditing = false;
+                this.testUserId = 1;
+                this.activeTab = 'socratic';
+                
+                this.initializeElements();
+                this.attachEventListeners();
+                this.loadModules();
+                this.initializeTabs();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    moduleSelector: document.getElementById('moduleSelector'),
+                    editBtn: document.getElementById('editBtn'),
+                    saveBtn: document.getElementById('saveBtn'),
+                    cancelBtn: document.getElementById('cancelBtn'),
+                    testMemoryBtn: document.getElementById('testMemoryBtn'),
+                    
+                    // Socratic fields
+                    systemPrompt: document.getElementById('systemPrompt'),
+                    modulePrompt: document.getElementById('modulePrompt'),
+                    systemCorpus: document.getElementById('systemCorpus'),
+                    moduleCorpus: document.getElementById('moduleCorpus'),
+                    dynamicCorpus: document.getElementById('dynamicCorpus'),
+                    apiEndpoint: document.getElementById('apiEndpoint'),
+                    
+                    // Memory fields
+                    memoryExtractionPrompt: document.getElementById('memoryExtractionPrompt'),
+                    masteryTriggers: document.getElementById('masteryTriggers'),
+                    confusionTriggers: document.getElementById('confusionTriggers'),
+                    memoryContextTemplate: document.getElementById('memoryContextTemplate'),
+                    crossModuleReferences: document.getElementById('crossModuleReferences'),
+                    memoryWeight: document.getElementById('memoryWeight'),
+                    
+                    // Context rules
+                    includeSystemMemory: document.getElementById('includeSystemMemory'),
+                    includeModuleProgress: document.getElementById('includeModuleProgress'),
+                    includeLearningStyle: document.getElementById('includeLearningStyle'),
+                    includeConversationState: document.getElementById('includeConversationState'),
+                    includeRecentBreakthroughs: document.getElementById('includeRecentBreakthroughs'),
+                    updateMemoryOnResponse: document.getElementById('updateMemoryOnResponse'),
+                    trackUnderstandingLevel: document.getElementById('trackUnderstandingLevel'),
+                    
+                    // Testing
+                    chatInput: document.getElementById('chatInput'),
+                    sendBtn: document.getElementById('sendBtn'),
+                    chatHistory: document.getElementById('chatHistory'),
+                    statusContainer: document.getElementById('statusContainer'),
+                    
+                    // Memory status
+                    exportedConversations: document.getElementById('exportedConversations'),
+                    memorySummaries: document.getElementById('memorySummaries'),
+                    activeConversations: document.getElementById('activeConversations'),
+                    
+                    // Memory preview
+                    generatePreviewBtn: document.getElementById('generatePreviewBtn'),
+                    testFullContextBtn: document.getElementById('testFullContextBtn'),
+                    testUserId: document.getElementById('testUserId'),
+                    memoryPreviewContainer: document.getElementById('memoryPreviewContainer'),
+                    testMessage: document.getElementById('testMessage'),
+                    sendTestBtn: document.getElementById('sendTestBtn'),
+                    testResponseContainer: document.getElementById('testResponseContainer'),
+                    testResponse: document.getElementById('testResponse')
+                };
+            }
+
+            initializeTabs() {
+                const tabButtons = document.querySelectorAll('.tab-btn');
+                const tabContents = document.querySelectorAll('.tab-content');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const tabId = button.getAttribute('data-tab');
+                        
+                        // Update tab buttons
+                        tabButtons.forEach(btn => {
+                            btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                            btn.classList.add('border-transparent', 'text-gray-500');
+                        });
+                        button.classList.add('active', 'border-blue-500', 'text-blue-600');
+                        
+                        // Update tab content
+                        tabContents.forEach(content => content.classList.add('hidden'));
+                        document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                        
+                        this.activeTab = tabId;
+                    });
+                });
+
+                // Set initial active tab
+                tabButtons[0].classList.add('border-blue-500', 'text-blue-600');
+                tabButtons[0].classList.remove('border-transparent', 'text-gray-500');
+            }
+
+            attachEventListeners() {
+                this.elements.moduleSelector.addEventListener('change', () => this.onModuleChange());
+                this.elements.editBtn.addEventListener('click', () => this.enableEditing());
+                this.elements.saveBtn.addEventListener('click', () => this.saveConfiguration());
+                this.elements.cancelBtn.addEventListener('click', () => this.cancelEditing());
+                this.elements.testMemoryBtn.addEventListener('click', () => this.testMemorySystem());
+                this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.elements.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+
+                // Memory preview listeners
+                this.elements.generatePreviewBtn.addEventListener('click', () => this.generateMemoryPreview());
+                this.elements.testFullContextBtn.addEventListener('click', () => this.testFullContext());
+                this.elements.sendTestBtn.addEventListener('click', () => this.sendTestMessage());
+                this.elements.testMessage.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendTestMessage();
+                });
+            }
+
+            showStatus(message, type = 'success') {
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+                const icon = type === 'success' ? '✅' : '❌';
+                
+                this.elements.statusContainer.innerHTML = `
+                    <div class="${bgColor} border px-4 py-3 rounded mb-4">
+                        ${icon} ${message}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    this.elements.statusContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            async loadModules() {
+                try {
+                    const response = await fetch(`${this.baseURL}/modules`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const modules = await response.json();
+                    this.elements.moduleSelector.innerHTML = '<option value="">Select a module...</option>';
+                    
+                    modules.forEach(module => {
+                        const option = document.createElement('option');
+                        option.value = module.id;
+                        option.textContent = `Module ${module.id}: ${module.title}`;
+                        this.elements.moduleSelector.appendChild(option);
+                    });
+                    
+                    this.showStatus(`Successfully loaded ${modules.length} modules!`);
+                } catch (error) {
+                    this.showStatus(`Failed to connect to backend: ${error.message}`, 'error');
+                }
+            }
+
+            async onModuleChange() {
+                const moduleId = this.elements.moduleSelector.value;
+                if (!moduleId) {
+                    this.clearFields();
+                    this.updateButtonStates();
+                    return;
+                }
+
+                this.currentModule = moduleId;
+                await this.loadModuleConfiguration(moduleId);
+                await this.loadMemoryStats(moduleId);
+                this.updateButtonStates();
+            }
+
+            async loadModuleConfiguration(moduleId) {
+                try {
+                    const response = await fetch(`${this.baseURL}/modules/${moduleId}`);
+                    if (response.ok) {
+                        const config = await response.json();
+                        this.setFieldValues(config);
+                        this.showStatus(`Loaded configuration for ${config.title}`);
+                    } else {
+                        this.setFieldValues({});
+                        this.showStatus(`Module ${moduleId} is empty. Click Edit to add configuration.`);
+                    }
+                } catch (error) {
+                    this.setFieldValues({});
+                    this.showStatus('Error loading module configuration', 'error');
+                }
+            }
+
+            async loadMemoryStats(moduleId) {
+                try {
+                    const response = await fetch(`${this.baseURL}/memory/stats/${moduleId}`);
+                    if (response.ok) {
+                        const stats = await response.json();
+                        if (stats.success) {
+                            this.elements.exportedConversations.textContent = stats.stats.exported_conversations;
+                            this.elements.memorySummaries.textContent = stats.stats.memory_summaries;
+                            this.elements.activeConversations.textContent = stats.stats.active_conversations;
+                        }
+                    } else {
+                        // Fallback if endpoint doesn't exist
+                        this.elements.exportedConversations.textContent = '0';
+                        this.elements.memorySummaries.textContent = '0';
+                        this.elements.activeConversations.textContent = '0';
+                    }
+                } catch (error) {
+                    // Fallback display
+                    this.elements.exportedConversations.textContent = '-';
+                    this.elements.memorySummaries.textContent = '-';
+                    this.elements.activeConversations.textContent = '-';
+                }
+            }
+
+            setFieldValues(config) {
+                // Socratic fields
+                this.elements.systemPrompt.value = config.system_prompt || '';
+                this.elements.modulePrompt.value = config.module_prompt || '';
+                this.elements.systemCorpus.value = config.system_corpus || '';
+                this.elements.moduleCorpus.value = config.module_corpus || '';
+                this.elements.dynamicCorpus.value = config.dynamic_corpus || '';
+                this.elements.apiEndpoint.value = config.api_endpoint || 'https://api.openai.com/v1/chat/completions';
+
+                // Memory fields (with defaults)
+                this.elements.memoryExtractionPrompt.value = config.memory_extraction_prompt || 
+                    'Analyze this conversation to extract: concepts mastered, learning breakthroughs, effective teaching methods';
+                this.elements.masteryTriggers.value = config.mastery_triggers || 
+                    'oh I see, that makes sense, so it means, I understand now, exactly, of course';
+                this.elements.confusionTriggers.value = config.confusion_triggers || 
+                    'I don\'t understand, this is confusing, what do you mean, I\'m lost, huh?';
+                this.elements.memoryContextTemplate.value = config.memory_context_template || 
+                    'Remember, this student previously mastered {concepts} and responds well to {teaching_methods}';
+                this.elements.crossModuleReferences.value = config.cross_module_references || 
+                    'Remember when you discovered {concept} in Module {number}? How might that connect to what we\'re exploring now?';
+                this.elements.memoryWeight.value = config.memory_weight || 'balanced';
+
+                // Context rules
+                this.elements.includeSystemMemory.checked = config.include_system_memory !== false;
+                this.elements.includeModuleProgress.checked = config.include_module_progress !== false;
+                this.elements.includeLearningStyle.checked = config.include_learning_style !== false;
+                this.elements.includeConversationState.checked = config.include_conversation_state !== false;
+                this.elements.includeRecentBreakthroughs.checked = config.include_recent_breakthroughs !== false;
+                this.elements.updateMemoryOnResponse.checked = config.update_memory_on_response !== false;
+                this.elements.trackUnderstandingLevel.checked = config.track_understanding_level !== false;
+            }
+
+            clearFields() {
+                this.setFieldValues({});
+            }
+
+            enableEditing() {
+                this.isEditing = true;
+                const fields = [
+                    this.elements.systemPrompt, this.elements.modulePrompt, 
+                    this.elements.systemCorpus, this.elements.moduleCorpus, 
+                    this.elements.dynamicCorpus, this.elements.apiEndpoint,
+                    this.elements.memoryExtractionPrompt, this.elements.masteryTriggers,
+                    this.elements.confusionTriggers, this.elements.memoryContextTemplate,
+                    this.elements.crossModuleReferences, this.elements.memoryWeight,
+                    this.elements.includeSystemMemory, this.elements.includeModuleProgress,
+                    this.elements.includeLearningStyle, this.elements.includeConversationState,
+                    this.elements.includeRecentBreakthroughs, this.elements.updateMemoryOnResponse,
+                    this.elements.trackUnderstandingLevel
+                ];
+                fields.forEach(field => field.disabled = false);
+                this.updateButtonStates();
+                this.showStatus('Editing enabled. Make changes and click Save.');
+            }
+
+            async saveConfiguration() {
+                const config = {
+                    // Socratic configuration
+                    system_prompt: this.elements.systemPrompt.value,
+                    module_prompt: this.elements.modulePrompt.value,
+                    system_corpus: this.elements.systemCorpus.value,
+                    module_corpus: this.elements.moduleCorpus.value,
+                    dynamic_corpus: this.elements.dynamicCorpus.value,
+                    api_endpoint: this.elements.apiEndpoint.value,
+                    
+                    // Memory configuration
+                    memory_extraction_prompt: this.elements.memoryExtractionPrompt.value,
+                    mastery_triggers: this.elements.masteryTriggers.value,
+                    confusion_triggers: this.elements.confusionTriggers.value,
+                    memory_context_template: this.elements.memoryContextTemplate.value,
+                    cross_module_references: this.elements.crossModuleReferences.value,
+                    memory_weight: this.elements.memoryWeight.value,
+                    
+                    // Context rules
+                    include_system_memory: this.elements.includeSystemMemory.checked,
+                    include_module_progress: this.elements.includeModuleProgress.checked,
+                    include_learning_style: this.elements.includeLearningStyle.checked,
+                    include_conversation_state: this.elements.includeConversationState.checked,
+                    include_recent_breakthroughs: this.elements.includeRecentBreakthroughs.checked,
+                    update_memory_on_response: this.elements.updateMemoryOnResponse.checked,
+                    track_understanding_level: this.elements.trackUnderstandingLevel.checked
+                };
+
+                try {
+                    const response = await fetch(`${this.baseURL}/modules/${this.currentModule}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    });
+
+                    if (response.ok) {
+                        this.showStatus(`Memory-aware configuration saved for Module ${this.currentModule}!`);
+                    } else {
+                        throw new Error('Save failed');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to save configuration', 'error');
+                }
+
+                this.isEditing = false;
+                this.disableEditing();
+            }
+
+            cancelEditing() {
+                this.isEditing = false;
+                this.disableEditing();
+                this.loadModuleConfiguration(this.currentModule);
+                this.showStatus('Changes cancelled');
+            }
+
+            disableEditing() {
+                const fields = [
+                    this.elements.systemPrompt, this.elements.modulePrompt, 
+                    this.elements.systemCorpus, this.elements.moduleCorpus, 
+                    this.elements.dynamicCorpus, this.elements.apiEndpoint,
+                    this.elements.memoryExtractionPrompt, this.elements.masteryTriggers,
+                    this.elements.confusionTriggers, this.elements.memoryContextTemplate,
+                    this.elements.crossModuleReferences, this.elements.memoryWeight,
+                    this.elements.includeSystemMemory, this.elements.includeModuleProgress,
+                    this.elements.includeLearningStyle, this.elements.includeConversationState,
+                    this.elements.includeRecentBreakthroughs, this.elements.updateMemoryOnResponse,
+                    this.elements.trackUnderstandingLevel
+                ];
+                fields.forEach(field => field.disabled = true);
+                this.updateButtonStates();
+            }
+
+            updateButtonStates() {
+                const hasModule = !!this.currentModule;
+                this.elements.editBtn.disabled = !hasModule || this.isEditing;
+                this.elements.saveBtn.disabled = !hasModule || !this.isEditing;
+                this.elements.cancelBtn.disabled = !hasModule || !this.isEditing;
+                this.elements.testMemoryBtn.disabled = !hasModule;
+                this.elements.chatInput.disabled = !hasModule;
+                this.elements.sendBtn.disabled = !hasModule;
+                this.elements.generatePreviewBtn.disabled = !hasModule;
+                this.elements.testFullContextBtn.disabled = !hasModule;
+                this.elements.testMessage.disabled = !hasModule;
+                this.elements.sendTestBtn.disabled = !hasModule;
+            }
+
+            async testMemorySystem() {
+                const userId = this.elements.testUserId.value || 1;
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/memory/test`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: parseInt(userId),
+                            module_id: parseInt(this.currentModule)
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            this.showStatus('Memory system test passed! All components working.');
+                        } else {
+                            this.showStatus(`Memory test failed: ${result.message}`, 'error');
+                        }
+                    } else {
+                        throw new Error('Memory test endpoint failed');
+                    }
+                } catch (error) {
+                    this.showStatus('Memory test failed - endpoint may not be implemented yet', 'error');
+                }
+            }
+
+            async generateMemoryPreview() {
+                const userId = this.elements.testUserId.value || 1;
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/memory/preview`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: parseInt(userId),
+                            module_id: parseInt(this.currentModule),
+                            test_message: "What is mass communication?"
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            this.displayMemoryPreview(result.preview);
+                        } else {
+                            this.elements.memoryPreviewContainer.innerHTML = `<div class="text-red-600">Error: ${result.message}</div>`;
+                        }
+                    } else {
+                        throw new Error('Preview generation failed');
+                    }
+                } catch (error) {
+                    this.elements.memoryPreviewContainer.innerHTML = '<div class="text-red-600">Memory preview endpoint not available. This is normal during development.</div>';
+                }
+            }
+
+            displayMemoryPreview(preview) {
+                const html = `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-3 rounded">
+                                <h4 class="font-semibold text-blue-800">System Memory</h4>
+                                <p class="text-sm text-blue-600">${preview.components.system_memory.summary}</p>
+                                <p class="text-xs text-blue-500">Onboarding: ${preview.components.system_memory.onboarding_fields} fields</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded">
+                                <h4 class="font-semibold text-green-800">Module Memory</h4>
+                                <p class="text-sm text-green-600">${preview.components.module_memory.summary}</p>
+                                <p class="text-xs text-green-500">Resources: ${preview.components.module_memory.corpus_items} items</p>
+                            </div>
+                            <div class="bg-orange-50 p-3 rounded">
+                                <h4 class="font-semibold text-orange-800">Conversation Memory</h4>
+                                <p class="text-sm text-orange-600">${preview.components.conversation_memory.summary}</p>
+                                <p class="text-xs text-orange-500">Messages: ${preview.components.conversation_memory.message_count}</p>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded">
+                                <h4 class="font-semibold text-purple-800">User Context</h4>
+                                <p class="text-sm text-purple-600">${preview.components.user_context.summary}</p>
+                                <p class="text-xs text-purple-500">Progress: ${preview.components.user_context.progress_modules} modules</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded">
+                            <h4 class="font-semibold text-gray-800">Full Prompt Length</h4>
+                            <p class="text-sm text-gray-600">${preview.prompt_length} characters</p>
+                        </div>
+                    </div>
+                `;
+                this.elements.memoryPreviewContainer.innerHTML = html;
+            }
+
+            async sendMessage() {
+                const message = this.elements.chatInput.value.trim();
+                if (!message) return;
+
+                this.addChatMessage('You', message);
+                this.elements.chatInput.value = '';
+
+                try {
+                    const response = await fetch(`${this.baseURL}/chat/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: this.testUserId,
+                            module_id: parseInt(this.currentModule),
+                            message: message
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.addChatMessage('Harv', result.reply);
+                    } else {
+                        throw new Error('Chat failed');
+                    }
+                } catch (error) {
+                    this.addChatMessage('Error', 'Could not get response. Check OpenAI API key.');
+                }
+            }
+
+            async sendTestMessage() {
+                const message = this.elements.testMessage.value.trim();
+                if (!message) return;
+
+                const userId = this.elements.testUserId.value || 1;
+
+                try {
+                    const response = await fetch(`${this.baseURL}/chat/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: parseInt(userId),
+                            module_id: parseInt(this.currentModule),
+                            message: message
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.elements.testResponse.textContent = result.reply;
+                        this.elements.testResponseContainer.classList.remove('hidden');
+                    } else {
+                        throw new Error('Test message failed');
+                    }
+                } catch (error) {
+                    this.elements.testResponse.textContent = 'Error: Could not get memory-enhanced response. Check API key and backend.';
+                    this.elements.testResponseContainer.classList.remove('hidden');
+                }
+            }
+
+            async testFullContext() {
+                const userId = this.elements.testUserId.value || 1;
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/memory/context`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: parseInt(userId),
+                            module_id: parseInt(this.currentModule)
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            this.showStatus('Full context test successful! Memory layers assembled correctly.');
+                            console.log('Full context:', result.context);
+                        } else {
+                            this.showStatus(`Context test failed: ${result.message}`, 'error');
+                        }
+                    } else {
+                        throw new Error('Context test failed');
+                    }
+                } catch (error) {
+                    this.showStatus('Context test endpoint not available. This is normal during development.', 'error');
+                }
+            }
+
+            addChatMessage(sender, message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'mb-2 p-2 rounded';
+                messageDiv.style.backgroundColor = sender === 'You' ? '#dbeafe' : '#f3f4f6';
+                messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+                
+                this.elements.chatHistory.appendChild(messageDiv);
+                this.elements.chatHistory.scrollTop = this.elements.chatHistory.scrollHeight;
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new MemoryAwareHarvGUI();
+        });
+    </script>
+</body>
+</html>

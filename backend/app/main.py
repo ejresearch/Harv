@@ -27,6 +27,7 @@ try:
 except ImportError:
     from app.routers.chat import router as chat_router
 from app.endpoints.memory import router as memory_router
+from app.endpoints.conversations import router as conversations_router
 try:
     from app.endpoints.auth import router as auth_router
 except ImportError:
@@ -57,7 +58,8 @@ app.add_middleware(
 # Include all routers
 app.include_router(modules_router)
 app.include_router(chat_router, prefix="/chat")
-app.include_router(memory_router)  # Memory router already has its own prefix
+app.include_router(memory_router)
+app.include_router(conversations_router, prefix="/conversations")  # Memory router already has its own prefix
 app.include_router(auth_router)    # Auth router already has its own prefix
 
 # Create tables on startup

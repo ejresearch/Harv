@@ -1,0 +1,364 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from app.models import Module
+from app.database import get_db
+from typing import Optional
+
+router = APIRouter()
+
+class ModuleConfig(BaseModel):
+    system_prompt: Optional[str] = None
+    module_prompt: Optional[str] = None
+    system_corpus: Optional[str] = None
+    module_corpus: Optional[str] = None
+    dynamic_corpus: Optional[str] = None
+    api_endpoint: Optional[str] = None
+
+class ModuleOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    resources: str
+    system_prompt: Optional[str] = None
+    module_prompt: Optional[str] = None
+    system_corpus: Optional[str] = None
+    module_corpus: Optional[str] = None
+    dynamic_corpus: Optional[str] = None
+    api_endpoint: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+@router.get("/modules", response_model=list[ModuleOut])
+def get_modules(db: Session = Depends(get_db)):
+    modules = db.query(Module).all()
+    return modules
+
+@router.get("/modules/{module_id}", response_model=ModuleOut)
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get GPT configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    return module
+
+@router.put("/modules/{module_id}")
+def update_module_config(module_id: int, config: ModuleConfig, db: Session = Depends(get_db)):
+    """Save/update GPT configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    
+    if not module:
+        # Create new module if it doesn't exist
+        module = Module(
+            id=module_id, 
+            title=f"Module {module_id}",
+            description="",
+            resources=""
+        )
+        db.add(module)
+    
+    # Update configuration fields
+    if config.system_prompt is not None:
+        module.system_prompt = config.system_prompt
+    if config.module_prompt is not None:
+        module.module_prompt = config.module_prompt
+    if config.system_corpus is not None:
+        module.system_corpus = config.system_corpus
+    if config.module_corpus is not None:
+        module.module_corpus = config.module_corpus
+    if config.dynamic_corpus is not None:
+        module.dynamic_corpus = config.dynamic_corpus
+    if config.api_endpoint is not None:
+        module.api_endpoint = config.api_endpoint
+    
+    db.commit()
+    db.refresh(module)
+    return {"message": f"Configuration saved for Module {module_id}", "module_id": module_id}
+
+@router.post("/modules/populate")
+def populate_module_titles(db: Session = Depends(get_db)):
+    """Helper endpoint to populate the 15 Mass Communication modules"""
+    mass_comm_modules = [
+        "Introduction to Mass Communication",
+        "History and Evolution of Media", 
+        "Media Theory and Effects",
+        "Print Media and Journalism",
+        "Broadcasting: Radio and Television",
+        "Digital Media and the Internet",
+        "Social Media and New Platforms",
+        "Media Ethics and Responsibility",
+        "Media Law and Regulation",
+        "Advertising and Public Relations",
+        "Media Economics and Business Models",
+        "Global Media and Cultural Impact",
+        "Media Literacy and Critical Analysis",
+        "Future of Mass Communication",
+        "Capstone: Integrating Knowledge"
+    ]
+    
+    created_modules = []
+    for i, title in enumerate(mass_comm_modules, 1):
+        existing = db.query(Module).filter(Module.id == i).first()
+        if not existing:
+            module = Module(
+                id=i,
+                title=title,
+                description=f"Module {i} of the Mass Communication course",
+                resources="",
+                system_prompt="",
+                module_prompt="",
+                system_corpus="",
+                module_corpus="",
+                dynamic_corpus=""
+            )
+            db.add(module)
+            created_modules.append(i)
+    
+    db.commit()
+    return {"message": f"Created {len(created_modules)} modules", "modules": created_modules}
+
+
+# Configuration endpoints for GUI
+@router.get("/{module_id}/config")
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "id": module.id,
+        "title": getattr(module, 'title', f'Module {module.id}'),
+        "system_prompt": getattr(module, 'system_prompt', ''),
+        "module_prompt": getattr(module, 'module_prompt', ''),
+        "system_corpus": getattr(module, 'system_corpus', ''),
+        "module_corpus": getattr(module, 'module_corpus', ''),
+        "dynamic_corpus": getattr(module, 'dynamic_corpus', ''),
+        "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+        "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+        "confusion_triggers": getattr(module, 'confusion_triggers', ''),
+        "memory_context_template": getattr(module, 'memory_context_template', ''),
+        "cross_module_references": getattr(module, 'cross_module_references', ''),
+        "learning_styles": getattr(module, 'learning_styles', ''),
+        "memory_weight": getattr(module, 'memory_weight', 2)
+    }
+
+@router.put("/{module_id}/config")
+def update_module_config(module_id: int, config: dict, db: Session = Depends(get_db)):
+    """Update configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    # Update fields safely
+    updatable_fields = [
+        'system_prompt', 'module_prompt', 'system_corpus', 'module_corpus',
+        'dynamic_corpus', 'memory_extraction_prompt', 'mastery_triggers',
+        'confusion_triggers', 'memory_context_template', 'cross_module_references',
+        'learning_styles', 'memory_weight'
+    ]
+    
+    for field, value in config.items():
+        if field in updatable_fields and hasattr(module, field):
+            setattr(module, field, value)
+    
+    db.commit()
+    return {"message": "Configuration updated successfully"}
+
+@router.get("/{module_id}/test")
+def test_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Test configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "status": "success",
+        "module": module.title or f"Module {module.id}",
+        "has_prompts": bool(getattr(module, 'system_prompt', '')),
+        "memory_ready": bool(getattr(module, 'memory_extraction_prompt', ''))
+    }
+
+@router.get("/export")
+def export_all_configs(db: Session = Depends(get_db)):
+    """Export all module configurations"""
+    modules = db.query(Module).all()
+    
+    export_data = []
+    for module in modules:
+        export_data.append({
+            "id": module.id,
+            "title": getattr(module, 'title', f'Module {module.id}'),
+            "system_prompt": getattr(module, 'system_prompt', ''),
+            "module_prompt": getattr(module, 'module_prompt', ''),
+            "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+            "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+            "confusion_triggers": getattr(module, 'confusion_triggers', '')
+        })
+    
+    return {"modules": export_data}
+
+@router.get("/{module_id}/config")
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "id": module.id,
+        "title": getattr(module, 'title', ''),
+        "system_prompt": getattr(module, 'system_prompt', ''),
+        "module_prompt": getattr(module, 'module_prompt', ''),
+        "system_corpus": getattr(module, 'system_corpus', ''),
+        "module_corpus": getattr(module, 'module_corpus', ''),
+        "dynamic_corpus": getattr(module, 'dynamic_corpus', ''),
+        "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+        "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+        "confusion_triggers": getattr(module, 'confusion_triggers', ''),
+        "learning_styles": getattr(module, 'learning_styles', ''),
+        "memory_weight": getattr(module, 'memory_weight', 2)
+    }
+
+@router.put("/{module_id}/config")
+def update_module_config(module_id: int, config: dict, db: Session = Depends(get_db)):
+    """Update configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    # Update fields safely
+    safe_fields = ['title', 'system_prompt', 'module_prompt', 'system_corpus', 
+                   'module_corpus', 'dynamic_corpus', 'memory_extraction_prompt',
+                   'mastery_triggers', 'confusion_triggers', 'learning_styles', 'memory_weight']
+    
+    for field, value in config.items():
+        if field in safe_fields and hasattr(module, field):
+            setattr(module, field, value)
+    
+    db.commit()
+    return {"message": "Configuration updated successfully"}
+
+@router.get("/{module_id}/config")
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "id": module.id,
+        "title": getattr(module, 'title', ''),
+        "system_prompt": getattr(module, 'system_prompt', ''),
+        "module_prompt": getattr(module, 'module_prompt', ''),
+        "system_corpus": getattr(module, 'system_corpus', ''),
+        "module_corpus": getattr(module, 'module_corpus', ''),
+        "dynamic_corpus": getattr(module, 'dynamic_corpus', ''),
+        "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+        "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+        "confusion_triggers": getattr(module, 'confusion_triggers', ''),
+        "learning_styles": getattr(module, 'learning_styles', ''),
+        "memory_weight": getattr(module, 'memory_weight', 2)
+    }
+
+@router.put("/{module_id}/config")
+def update_module_config(module_id: int, config: dict, db: Session = Depends(get_db)):
+    """Update configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    # Update fields safely
+    safe_fields = ['title', 'system_prompt', 'module_prompt', 'system_corpus', 
+                   'module_corpus', 'dynamic_corpus', 'memory_extraction_prompt',
+                   'mastery_triggers', 'confusion_triggers', 'learning_styles', 'memory_weight']
+    
+    for field, value in config.items():
+        if field in safe_fields and hasattr(module, field):
+            setattr(module, field, value)
+    
+    db.commit()
+    return {"message": "Configuration updated successfully"}
+
+@router.get("/{module_id}/config")
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "id": module.id,
+        "title": getattr(module, 'title', ''),
+        "system_prompt": getattr(module, 'system_prompt', ''),
+        "module_prompt": getattr(module, 'module_prompt', ''),
+        "system_corpus": getattr(module, 'system_corpus', ''),
+        "module_corpus": getattr(module, 'module_corpus', ''),
+        "dynamic_corpus": getattr(module, 'dynamic_corpus', ''),
+        "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+        "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+        "confusion_triggers": getattr(module, 'confusion_triggers', ''),
+        "learning_styles": getattr(module, 'learning_styles', ''),
+        "memory_weight": getattr(module, 'memory_weight', 2)
+    }
+
+@router.put("/{module_id}/config")
+def update_module_config(module_id: int, config: dict, db: Session = Depends(get_db)):
+    """Update configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    # Update fields safely
+    safe_fields = ['title', 'system_prompt', 'module_prompt', 'system_corpus', 
+                   'module_corpus', 'dynamic_corpus', 'memory_extraction_prompt',
+                   'mastery_triggers', 'confusion_triggers', 'learning_styles', 'memory_weight']
+    
+    for field, value in config.items():
+        if field in safe_fields and hasattr(module, field):
+            setattr(module, field, value)
+    
+    db.commit()
+    return {"message": "Configuration updated successfully"}
+
+@router.get("/{module_id}/config")
+def get_module_config(module_id: int, db: Session = Depends(get_db)):
+    """Get configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return {
+        "id": module.id,
+        "title": getattr(module, 'title', ''),
+        "system_prompt": getattr(module, 'system_prompt', ''),
+        "module_prompt": getattr(module, 'module_prompt', ''),
+        "system_corpus": getattr(module, 'system_corpus', ''),
+        "module_corpus": getattr(module, 'module_corpus', ''),
+        "dynamic_corpus": getattr(module, 'dynamic_corpus', ''),
+        "memory_extraction_prompt": getattr(module, 'memory_extraction_prompt', ''),
+        "mastery_triggers": getattr(module, 'mastery_triggers', ''),
+        "confusion_triggers": getattr(module, 'confusion_triggers', ''),
+        "learning_styles": getattr(module, 'learning_styles', ''),
+        "memory_weight": getattr(module, 'memory_weight', 2)
+    }
+
+@router.put("/{module_id}/config")
+def update_module_config(module_id: int, config: dict, db: Session = Depends(get_db)):
+    """Update configuration for a specific module"""
+    module = db.query(Module).filter(Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    # Update fields safely
+    safe_fields = ['title', 'system_prompt', 'module_prompt', 'system_corpus', 
+                   'module_corpus', 'dynamic_corpus', 'memory_extraction_prompt',
+                   'mastery_triggers', 'confusion_triggers', 'learning_styles', 'memory_weight']
+    
+    for field, value in config.items():
+        if field in safe_fields and hasattr(module, field):
+            setattr(module, field, value)
+    
+    db.commit()
+    return {"message": "Configuration updated successfully"}
