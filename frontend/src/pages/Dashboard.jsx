@@ -1,215 +1,221 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, User, Sun, Moon, HelpCircle } from 'lucide-react';
-
-// 15 Mass Communication modules per specifications
-const modules = [
-  "Introduction to Mass Communication",
-  "History and Evolution of Media",
-  "Media Theory and Effects",
-  "Print Media and Journalism",
-  "Broadcasting: Radio and Television",
-  "Digital Media and the Internet",
-  "Social Media and New Platforms",
-  "Media Ethics and Responsibility",
-  "Media Law and Regulation",
-  "Advertising and Public Relations",
-  "Media Economics and Business Models",
-  "Global Media and Cultural Impact",
-  "Media Literacy and Critical Analysis",
-  "Future of Mass Communication",
-  "Capstone: Integrating Knowledge"
-];
+import { useNavigate } from 'react-router-dom';
+import { BookOpen, MessageCircle, TrendingUp, Clock, Play, ChevronRight, Brain } from 'lucide-react';
+import ApiService from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [user] = useState({ name: "Alex Johnson", email: "alex.johnson@university.edu" });
-  const [completedModules] = useState(new Set([0, 1, 2])); // Mock completed modules
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setDarkMode(savedTheme === 'dark');
-    } else {
-      setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
+    loadModules();
   }, []);
 
-  const toggleTheme = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+  const loadModules = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.getModules();
+      setModules(Array.isArray(response) ? response : []);
+    } catch (err) {
+      setError('Failed to load modules. Make sure your backend is running.');
+      console.error('Error loading modules:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleModuleSelect = (moduleTitle, index) => {
-    alert(`Opening Module ${index + 1}: ${moduleTitle}\n\nNext: Module chat interface would load!`);
+  const startModule = (module) => {
+    navigate(`/module/${module.id}`);
   };
 
-  const handleFAQ = () => {
-    alert('FAQ/Help page would open!');
-  };
-
-  const handleExitSurvey = () => {
-    alert('Exit Survey would open!');
-  };
-
-  const handleLogout = () => {
-    alert('Logged out! Would return to Landing Page.');
-  };
-
-  // Updated color palette
-  const themeClasses = {
-    bg: darkMode ? 'bg-gray-900' : 'bg-[#D6CDB8]',
-    cardBg: darkMode ? 'bg-gray-800' : 'bg-white',
-    text: darkMode ? 'text-white' : 'text-[#222222]',
-    textMuted: darkMode ? 'text-gray-400' : 'text-[#222222]',
-    textSubtle: darkMode ? 'text-gray-500' : 'text-gray-600',
-    border: darkMode ? 'border-gray-700' : 'border-gray-200',
-    hover: darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50',
-    hoverText: darkMode ? 'hover:text-gray-200' : 'hover:text-[#222222]',
-    moduleCard: darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <p className="text-gray-600">Loading your modules...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen ${themeClasses.bg}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
-      {/* Header */}
-      <div className={`${themeClasses.cardBg} border-b ${themeClasses.border} shadow-sm`}>
-        <div className="max-w-6xl mx-auto px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <div className={`text-2xl font-bold ${themeClasses.text}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
-              <span className="relative">
-                h
-                <span className="absolute -top-1 -right-1 text-[#3E5641] text-sm">🌿</span>
-                arv
-              </span>
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Welcome Section */}
+      <div className="mb-8 fade-in">
+        <h1 className="text-4xl font-bold text-primary-green mb-3">
+          Welcome back, {user?.name?.split(' ')[0] || user?.email?.split('@')[0]}! 👋
+        </h1>
+        <p className="text-xl text-gray-600">
+          Ready to continue your Socratic learning journey? Choose a module below.
+        </p>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary-green/10 rounded-lg flex items-center justify-center">
+              <BookOpen className="text-primary-green" size={24} />
             </div>
-            <span className={`font-semibold text-xl ${themeClasses.text}`}>Primer Initiative</span>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{modules.length}</p>
+              <p className="text-sm text-gray-600">Available Modules</p>
+            </div>
           </div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+              <MessageCircle className="text-blue-600" size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">0</p>
+              <p className="text-sm text-gray-600">Conversations</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+              <TrendingUp className="text-green-600" size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">0%</p>
+              <p className="text-sm text-gray-600">Progress</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+              <Brain className="text-purple-600" size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">Active</p>
+              <p className="text-sm text-gray-600">AI Memory</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-6">
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-lg ${themeClasses.textMuted} ${themeClasses.hoverText} transition-colors`}
-            >
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-8">
+          <p className="font-medium">Connection Error</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button 
+            onClick={loadModules}
+            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
-            <div className={`flex items-center gap-3 text-base ${themeClasses.textMuted}`}>
-              <User size={18} />
-              {user.name}
+      {/* Modules Section */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Communication Modules</h2>
+        <p className="text-gray-600">Click any module to start learning through Socratic questioning</p>
+      </div>
+
+      {/* Modules Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {modules.map((module, index) => (
+          <div
+            key={module.id}
+            onClick={() => startModule(module)}
+            className="bg-white rounded-xl p-6 border border-gray-200 hover:border-primary-green hover:shadow-lg transition-all duration-200 cursor-pointer group fade-in"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-primary-green/10 rounded-lg flex items-center justify-center group-hover:bg-primary-green group-hover:text-white transition-colors">
+                <BookOpen size={24} className="group-hover:text-white text-primary-green" />
+              </div>
+              <div className="flex items-center text-xs bg-primary-green/10 text-primary-green px-3 py-1 rounded-full">
+                Module {module.id}
+              </div>
             </div>
             
-            <button
-              onClick={handleLogout}
-              className={`text-base ${themeClasses.textSubtle} ${themeClasses.hoverText} flex items-center gap-2 transition-colors`}
-            >
-              <LogOut size={18} />
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-8 py-12">
-        {/* Personalized Greeting */}
-        <div className="mb-12">
-          <h1 className={`text-3xl font-semibold ${themeClasses.text} mb-3`}>
-            Welcome, {user.name.split(' ')[0]}
-          </h1>
-          <p className={`text-lg ${themeClasses.textMuted}`}>
-            Continue your mass communication learning journey
-          </p>
-        </div>
-
-        {/* Progress Overview */}
-        <div className="mb-12 flex items-center gap-8">
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 bg-[#3E5641] rounded-full"></div>
-            <span className={`text-lg ${themeClasses.textMuted} font-medium`}>
-              {completedModules.size} of {modules.length} modules completed
-            </span>
-          </div>
-          <div className={`text-base ${themeClasses.textSubtle}`}>
-            {Math.round((completedModules.size / modules.length) * 100)}% Progress
-          </div>
-        </div>
-
-        {/* Linear List of 15 Modules */}
-        <div className="mb-12">
-          <h2 className={`text-2xl font-semibold ${themeClasses.text} mb-8`}>Course Modules</h2>
-          <div className="space-y-3">
-            {modules.map((title, index) => {
-              const isCompleted = completedModules.has(index);
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleModuleSelect(title, index)}
-                  className={`w-full text-left p-6 rounded-xl ${themeClasses.moduleCard} transition-all shadow-sm border ${themeClasses.border} group`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <span className={`text-lg ${themeClasses.textSubtle} font-bold font-mono w-12`}>
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        {isCompleted && (
-                          <div className="w-3 h-3 bg-[#3E5641] rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className={`text-lg font-semibold ${themeClasses.text} ${themeClasses.hoverText} transition-colors ${isCompleted ? 'opacity-75' : ''}`}>
-                          {title}
-                        </h3>
-                        <p className={`text-base ${themeClasses.textSubtle} mt-1`}>
-                          {isCompleted ? 'Completed' : 'Ready to start'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`${themeClasses.textSubtle} group-hover:${themeClasses.textMuted} transition-colors`}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Navigation to FAQ/Help and Exit Survey */}
-        <div className="flex gap-6">
-          <button
-            onClick={handleFAQ}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl ${themeClasses.moduleCard} transition-colors border ${themeClasses.border} shadow-sm`}
-          >
-            <HelpCircle size={20} className="text-[#3E5641]" />
-            <span className={`text-lg font-medium ${themeClasses.text}`}>FAQ & Help</span>
-          </button>
-          
-          <button
-            onClick={handleExitSurvey}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl ${themeClasses.moduleCard} transition-colors border ${themeClasses.border} shadow-sm`}
-          >
-            <div className="w-5 h-5 bg-[#3E5641] rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">✓</span>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-primary-green transition-colors">
+              {module.title}
+            </h3>
+            
+            <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-3">
+              {module.description || 'Explore mass communication concepts through guided Socratic questioning and discovery-based learning.'}
+            </p>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>Ready to start</span>
+              </div>
+              <div className="flex items-center gap-1 text-primary-green group-hover:translate-x-1 transition-transform">
+                <Play size={14} />
+                <ChevronRight size={14} />
+              </div>
             </div>
-            <span className={`text-lg font-medium ${themeClasses.text}`}>Exit Survey</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {modules.length === 0 && !loading && !error && (
+        <div className="text-center py-16">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <BookOpen className="text-gray-400" size={48} />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-3">No modules available</h3>
+          <p className="text-gray-500 mb-6">Modules will appear here once your backend is configured.</p>
+          <button 
+            onClick={loadModules}
+            className="bg-primary-green text-white px-6 py-2 rounded-lg hover:bg-primary-600 transition-colors"
+          >
+            Refresh Modules
           </button>
         </div>
+      )}
 
-        {/* Footer */}
-        <div className={`mt-16 pt-8 border-t ${themeClasses.border} text-center`}>
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-2 h-2 bg-[#3E5641] rounded-full"></div>
-            <span className={`text-base ${themeClasses.textSubtle} font-medium`}>
-              Powered by AI • Socratic Method • Personalized Learning
-            </span>
-            <div className="w-2 h-2 bg-[#3E5641] rounded-full"></div>
+      {/* Learning Tips */}
+      {modules.length > 0 && (
+        <div className="mt-12 bg-gradient-to-r from-primary-green/5 to-blue-50 rounded-xl p-8 border border-primary-green/20">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 Socratic Learning Tips</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs">1</span>
+              </div>
+              <p>Ask open-ended questions to explore concepts deeply</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs">2</span>
+              </div>
+              <p>Share your thinking process - Harv learns from your reasoning</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs">3</span>
+              </div>
+              <p>Build on previous conversations - your memory system remembers</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-5 h-5 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs">4</span>
+              </div>
+              <p>Export conversations for study and review later</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

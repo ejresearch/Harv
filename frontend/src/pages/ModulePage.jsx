@@ -1,409 +1,375 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Download, FileText, Loader2, Sun, Moon, Plus, MessageSquare, BookOpen, Monitor } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Send, Download, BookOpen, Brain, MessageCircle, User, Bot } from 'lucide-react';
+import ApiService from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const ModulePage = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState(1);
-  const [conversations, setConversations] = useState({
-    1: {
-      id: 1,
-      title: "Understanding Media Influence",
-      messages: [
-        {
-          role: 'assistant',
-          content: 'Hello! I\'m Harv, your Socratic tutor for Module 1: Introduction to Mass Communication. Instead of giving you direct answers, I\'ll guide you to discover insights through thoughtful questions.\n\nWhat aspects of mass media\'s influence on daily life do you find most intriguing?'
-        }
-      ],
-      lastActivity: new Date().toISOString()
-    },
-    2: {
-      id: 2,
-      title: "Media Theory Discussion",
-      messages: [
-        {
-          role: 'assistant',
-          content: 'Welcome back! Let\'s explore media theory together. What questions do you have about how different media formats affect message reception?'
-        },
-        {
-          role: 'user',
-          content: 'I\'ve been thinking about how social media changes the way we consume news compared to traditional newspapers.'
-        },
-        {
-          role: 'assistant',
-          content: 'That\'s a fascinating observation! What specific differences have you noticed in how you personally engage with news on social media versus when reading a physical newspaper? Consider your attention span, the depth of articles you read, and how you verify information.'
-        }
-      ],
-      lastActivity: new Date(Date.now() - 86400000).toISOString()
-    }
-  });
-  const [input, setInput] = useState('');
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const [module, setModule] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showResources, setShowResources] = useState(true);
-
-  const module = {
-    id: 1,
-    title: "Introduction to Mass Communication",
-    resources: [
-      { title: "Lecture Slides: Media Fundamentals", type: "slides", url: "#" },
-      { title: "Reading: Communication Theory Basics", type: "reading", url: "#" },
-      { title: "Case Study: Social Media Impact", type: "reading", url: "#" },
-      { title: "Video: History of Mass Media", type: "video", url: "#" }
-    ]
-  };
+  const [conversationId, setConversationId] = useState(null);
+  const [memoryStats, setMemoryStats] = useState(null);
+  const [connected, setConnected] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setDarkMode(savedTheme === 'dark');
-    } else {
-      setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-  }, []);
+    loadModule();
+    loadMemoryStats();
+    initializeConversation();
+  }, [id]);
 
-  const toggleTheme = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const socraticResponses = [
-    "That's an insightful observation! What evidence have you seen that supports this perspective? Can you think of a specific example?",
-    "Excellent question! Before we explore that together, what's your initial thinking? What patterns have you noticed?",
-    "You're making important connections. How might this principle apply differently across various demographic groups or cultures?",
-    "That's a thoughtful response. What questions does this raise for you about the responsibility of media creators and consumers?",
-    "I can see you're thinking deeply about this. If you were to challenge that assumption, what counterarguments might emerge?",
-    "Very perceptive! How do you think this concept has evolved with the rise of digital and social media platforms?",
-    "Interesting perspective! What led you to that conclusion? Can you walk me through your reasoning?"
-  ];
+  const loadModule = async () => {
+    try {
+      const modules = await ApiService.getModules();
+      const foundModule = modules.find(m => m.id === parseInt(id));
+      setModule(foundModule);
+      setConnected(true);
+    } catch (error) {
+      console.error('Error loading module:', error);
+      setConnected(false);
+    }
+  };
 
-  const currentConversation = conversations[currentConversationId];
+  const loadMemoryStats = async () => {
+    try {
+      const stats = await ApiService.getMemoryStats(id);
+      setMemoryStats(stats);
+    } catch (error) {
+      console.error('Error loading memory stats:', error);
+    }
+  };
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
+  const initializeConversation = () => {
+    const welcomeMessage = {
+      role: 'assistant',
+      content: `Welcome! I'm Harv, your Socratic tutor for this module. 🌱
 
-    const userMessage = { role: 'user', content: input };
-    const updatedConversations = {
-      ...conversations,
-      [currentConversationId]: {
-        ...currentConversation,
-        messages: [...currentConversation.messages, userMessage],
-        lastActivity: new Date().toISOString()
-      }
+Rather than giving you direct answers, I'll guide you through thoughtful questions to help you discover concepts yourself.
+
+Your learning context is being assembled from:
+• Your learning profile and preferences  
+• Previous conversations and insights
+• Module-specific knowledge base
+• Real-time conversation analysis
+
+What would you like to explore first? I'm here to ask the right questions to spark your understanding!`,
+      timestamp: new Date().toISOString()
     };
-    setConversations(updatedConversations);
-    setInput('');
+    
+    setMessages([welcomeMessage]);
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || loading) return;
+
+    const userMessage = {
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
     setLoading(true);
 
-    setTimeout(() => {
-      const randomResponse = socraticResponses[Math.floor(Math.random() * socraticResponses.length)];
-      const assistantMessage = { role: 'assistant', content: randomResponse };
+    try {
+      const response = await ApiService.sendMessage({
+        user_id: user?.id || 1,
+        module_id: parseInt(id),
+        message: inputMessage,
+        conversation_id: conversationId || 'default'
+      });
 
-      setConversations(prev => ({
-        ...prev,
-        [currentConversationId]: {
-          ...prev[currentConversationId],
-          messages: [...prev[currentConversationId].messages, assistantMessage],
-          lastActivity: new Date().toISOString()
-        }
-      }));
+      const assistantMessage = {
+        role: 'assistant',
+        content: response.reply || response.response || "That's interesting! What led you to think about it that way?",
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Graceful fallback with Socratic responses
+      const fallbackResponses = [
+        "That's fascinating! What led you to think about it that way?",
+        "I'm curious about your perspective. Can you break that down for me?",
+        "What examples from your experience might relate to this?",
+        "What questions does this raise for you about communication?",
+        "How might this concept apply in different contexts?"
+      ];
+      
+      const errorMessage = {
+        role: 'assistant',
+        content: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)],
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setLoading(false);
-    }, 1500);
-  };
-
-  const createNewConversation = () => {
-    const newId = Math.max(...Object.keys(conversations).map(Number)) + 1;
-    const newConversation = {
-      id: newId,
-      title: "New Conversation",
-      messages: [
-        {
-          role: 'assistant',
-          content: `Hello! I'm Harv, ready to explore ${module.title} with you through thoughtful dialogue. What would you like to discuss today?`
-        }
-      ],
-      lastActivity: new Date().toISOString()
-    };
-
-    setConversations(prev => ({
-      ...prev,
-      [newId]: newConversation
-    }));
-    setCurrentConversationId(newId);
-  };
-
-  const exportChatPDF = () => {
-    alert('PDF export functionality would generate a formatted PDF of the conversation');
-  };
-
-  const exportChatTXT = () => {
-    const chatText = currentConversation.messages.map(msg =>
-      `${msg.role === 'user' ? 'Student' : 'Harv'}: ${msg.content}`
-    ).join('\n\n');
-
-    const blob = new Blob([chatText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `module-${module.id}-${currentConversation.title.replace(/\s+/g, '-')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleBack = () => {
-    alert('Would navigate back to Dashboard');
-  };
-
-  const formatTime = (isoString) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getResourceIcon = (type) => {
-    switch (type) {
-      case 'slides': return <Monitor size={16} className="text-[#3E5641]" />;
-      case 'reading': return <BookOpen size={16} className="text-[#3E5641]" />;
-      case 'video': return <FileText size={16} className="text-[#3E5641]" />;
-      default: return <FileText size={16} className="text-[#3E5641]" />;
     }
   };
 
-  // Updated color palette
-  const themeClasses = {
-    bg: darkMode ? 'bg-gray-900' : 'bg-[#D6CDB8]',
-    cardBg: darkMode ? 'bg-gray-800' : 'bg-white',
-    sidebarBg: darkMode ? 'bg-gray-800' : 'bg-white',
-    text: darkMode ? 'text-white' : 'text-[#222222]',
-    textMuted: darkMode ? 'text-gray-400' : 'text-[#222222]',
-    textSubtle: darkMode ? 'text-gray-500' : 'text-gray-600',
-    border: darkMode ? 'border-gray-700' : 'border-gray-200',
-    input: darkMode 
-      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-[#3E5641] focus:border-[#3E5641]' 
-      : 'bg-white border-gray-300 text-[#222222] placeholder-gray-500 focus:ring-[#3E5641] focus:border-[#3E5641]',
-    button: darkMode 
-      ? 'bg-white text-gray-900 hover:bg-gray-100' 
-      : 'bg-[#3E5641] text-white hover:bg-[#2D3F2F]',
-    avatar: darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-[#222222]',
-    hover: darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50',
-    hoverText: darkMode ? 'hover:text-gray-200' : 'hover:text-[#222222]',
-    active: darkMode ? 'bg-gray-700 border-gray-600' : 'bg-[#3E5641] bg-opacity-10 border-[#3E5641]'
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
+  const exportConversation = async () => {
+    try {
+      const response = await ApiService.exportConversation({
+        conversation_id: conversationId || 'default',
+        format: 'txt'
+      });
+      
+      // Create download
+      const element = document.createElement('a');
+      const file = new Blob([JSON.stringify(messages, null, 2)], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = `harv-conversation-${module?.title || 'module'}-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      
+    } catch (error) {
+      console.error('Error exporting conversation:', error);
+    }
+  };
+
+  if (!module) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <p className="text-gray-600">Loading module...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen ${themeClasses.bg} flex`} style={{ fontFamily: 'Nunito, sans-serif' }}>
-      {/* Resources Sidebar */}
-      {showResources && (
-        <div className={`w-80 ${themeClasses.sidebarBg} border-r ${themeClasses.border} flex flex-col shadow-lg`}>
-          {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`font-semibold ${themeClasses.text} text-lg`}>
-                Module Resources
-              </h2>
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-lg ${themeClasses.textMuted} ${themeClasses.hoverText} transition-colors`}
-              >
-                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-            </div>
-            <button
-              onClick={createNewConversation}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl ${themeClasses.border} border ${themeClasses.hover} transition-colors text-base ${themeClasses.textMuted} font-medium`}
-            >
-              <Plus size={18} />
-              New Conversation
-            </button>
+    <div className="max-w-7xl mx-auto h-screen flex flex-col">
+      {/* Header */}
+      <div className="bg-primary-green text-white px-6 py-4 flex items-center justify-between shadow-lg">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+          >
+            <ArrowLeft size={18} />
+            <span className="hidden sm:inline">Back to Dashboard</span>
+          </button>
+          
+          <div>
+            <h1 className="text-xl font-semibold">{module.title}</h1>
+            <p className="text-white/80 text-sm">Socratic Learning with Harv</p>
           </div>
+        </div>
 
-          {/* Module Resources */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className={`font-semibold ${themeClasses.text} mb-4 text-base`}>Lecture Materials</h3>
-            <div className="space-y-2">
-              {module.resources.map((resource, index) => (
-                <button
+        <div className="flex items-center gap-3">
+          {connected && (
+            <div className="flex items-center gap-2 text-sm bg-white/20 px-3 py-2 rounded-lg">
+              <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+              <span className="hidden sm:inline">Connected</span>
+            </div>
+          )}
+          
+          {memoryStats && (
+            <div className="flex items-center gap-2 text-sm bg-white/20 px-3 py-2 rounded-lg">
+              <Brain size={16} />
+              <span className="hidden sm:inline">Memory Active</span>
+            </div>
+          )}
+          
+          <button
+            onClick={exportConversation}
+            className="flex items-center gap-2 px-3 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Export</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Chat */}
+        <div className="flex-1 flex flex-col">
+          {/* Messages */}
+          <div className="flex-1 p-6 overflow-y-auto chat-scroll bg-gray-50">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {messages.map((message, index) => (
+                <div
                   key={index}
-                  onClick={() => alert(`Opening: ${resource.title}`)}
-                  className={`w-full text-left p-3 rounded-lg ${themeClasses.hover} transition-colors group`}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-center gap-3">
-                    {getResourceIcon(resource.type)}
-                    <span className={`text-sm font-medium ${themeClasses.text} ${themeClasses.hoverText} transition-colors`}>
-                      {resource.title}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <h3 className={`font-semibold ${themeClasses.text} mb-4 text-base`}>Your Conversations</h3>
-            {Object.values(conversations)
-              .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
-              .map((conversation) => (
-                <button
-                  key={conversation.id}
-                  onClick={() => setCurrentConversationId(conversation.id)}
-                  className={`w-full text-left p-4 rounded-xl mb-3 transition-colors border ${
-                    conversation.id === currentConversationId
-                      ? themeClasses.active
-                      : `${themeClasses.hover} border-transparent`
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare size={16} className={themeClasses.textMuted} />
-                        <span className={`text-base font-semibold ${themeClasses.text} truncate`}>
-                          {conversation.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-sm ${themeClasses.textSubtle}`}>
-                          {conversation.messages.length} messages
-                        </span>
-                        <span className={`text-sm ${themeClasses.textSubtle}`}>
-                          {formatTime(conversation.lastActivity)}
-                        </span>
-                      </div>
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0">
+                      <Bot size={16} className="text-white" />
                     </div>
-                  </div>
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className={`${themeClasses.cardBg} border-b ${themeClasses.border} px-8 py-6 shadow-sm`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <button
-                onClick={handleBack}
-                className={`${themeClasses.textSubtle} ${themeClasses.hoverText} flex items-center gap-2 text-base transition-colors`}
-              >
-                <ArrowLeft size={20} />
-                Back to Dashboard
-              </button>
-              <div>
-                <h1 className={`font-semibold ${themeClasses.text} text-xl`}>
-                  {module.title}
-                </h1>
-                <p className={`text-base ${themeClasses.textSubtle} mt-1`}>
-                  Harv Chat: {currentConversation.title}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowResources(!showResources)}
-                className={`p-3 rounded-lg ${themeClasses.textMuted} ${themeClasses.hoverText} transition-colors`}
-              >
-                <BookOpen size={20} />
-              </button>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={exportChatPDF}
-                  className={`text-base ${themeClasses.textSubtle} ${themeClasses.hoverText} flex items-center gap-2 transition-colors px-4 py-2 rounded-lg ${themeClasses.hover}`}
-                >
-                  <FileText size={16} />
-                  Export PDF
-                </button>
-                <button
-                  onClick={exportChatTXT}
-                  className={`text-base ${themeClasses.textSubtle} ${themeClasses.hoverText} flex items-center gap-2 transition-colors px-4 py-2 rounded-lg ${themeClasses.hover}`}
-                >
-                  <Download size={16} />
-                  Export TXT
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-8 py-8">
-            <div className="space-y-8">
-              {currentConversation.messages.map((message, index) => (
-                <div key={index} className="flex gap-6">
-                  <div className={`w-10 h-10 rounded-full ${themeClasses.avatar} flex items-center justify-center flex-shrink-0 mt-1 font-semibold`}>
-                    <span className="text-base">
-                      {message.role === 'user' ? 'Y' : 'H'}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-base ${themeClasses.text} leading-relaxed whitespace-pre-wrap`}>
+                  )}
+                  
+                  <div
+                    className={`max-w-[75%] px-4 py-3 rounded-2xl ${
+                      message.role === 'user'
+                        ? 'bg-primary-green text-white rounded-br-sm'
+                        : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200 shadow-sm'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap leading-relaxed">
                       {message.content}
+                    </p>
+                    <div className={`text-xs mt-2 ${
+                      message.role === 'user' ? 'text-white/70' : 'text-gray-500'
+                    }`}>
+                      {new Date(message.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
+
+                  {message.role === 'user' && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={16} className="text-gray-600" />
+                    </div>
+                  )}
                 </div>
               ))}
-
+              
               {loading && (
-                <div className="flex gap-6">
-                  <div className={`w-10 h-10 rounded-full ${themeClasses.avatar} flex items-center justify-center flex-shrink-0 mt-1 font-semibold`}>
-                    <span className="text-base">H</span>
+                <div className="flex gap-3 justify-start">
+                  <div className="w-8 h-8 bg-primary-green rounded-full flex items-center justify-center flex-shrink-0">
+                    <Bot size={16} className="text-white" />
                   </div>
-                  <div className="flex-1">
-                    <div className={`flex items-center gap-3 text-base ${themeClasses.textSubtle}`}>
-                      <Loader2 size={18} className="animate-spin" />
-                      Harv is thinking...
+                  <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
               )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Input Area */}
+          <div className="border-t border-gray-200 bg-white p-4">
+            <div className="max-w-4xl mx-auto flex gap-3">
+              <textarea
+                ref={inputRef}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask me anything about this module, share your thoughts, or explore a concept..."
+                className="flex-1 resize-none border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent transition-colors"
+                rows="2"
+                disabled={loading}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={loading || !inputMessage.trim()}
+                className="px-6 py-3 bg-primary-green text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+              >
+                <Send size={18} />
+                <span className="hidden sm:inline">Send</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className={`${themeClasses.cardBg} border-t ${themeClasses.border} px-8 py-6`}>
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                  placeholder="Share your thoughts or ask a question..."
-                  className={`w-full px-4 py-4 border rounded-xl text-base resize-none focus:outline-none focus:ring-2 ${themeClasses.input}`}
-                  rows="2"
-                  style={{ minHeight: '56px', maxHeight: '120px' }}
-                  disabled={loading}
-                />
-              </div>
-              <button
-                onClick={sendMessage}
-                disabled={loading || !input.trim()}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${themeClasses.button} shadow-sm`}
-              >
-                <Send size={20} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between mt-3">
-              <p className={`text-sm ${themeClasses.textSubtle}`}>
-                Press Enter to send, Shift+Enter for new line
+        {/* Sidebar */}
+        <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <BookOpen size={18} />
+                Module Overview
+              </h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {module.description || 'Explore mass communication concepts through Socratic questioning and guided discovery.'}
               </p>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#3E5641] rounded-full"></div>
-                <span className={`text-sm ${themeClasses.textSubtle}`}>
-                  {currentConversation.messages.filter(m => m.role === 'user').length} messages sent
-                </span>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <MessageCircle size={18} />
+                Conversation Stats
+              </h3>
+              <div className="text-sm text-gray-600 space-y-2">
+                <div className="flex justify-between">
+                  <span>Messages:</span>
+                  <span className="font-medium">{messages.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Status:</span>
+                  <span className={`font-medium ${connected ? 'text-green-600' : 'text-red-600'}`}>
+                    {connected ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+                {conversationId && (
+                  <div className="flex justify-between">
+                    <span>Session:</span>
+                    <span className="font-medium text-xs">{conversationId.slice(0, 8)}...</span>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {memoryStats && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Brain size={18} />
+                  Learning Context
+                </h3>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>✅ Memory system active</p>
+                  <p>📊 Context: {memoryStats.context_length || '0'} chars</p>
+                  <p>💬 Sessions: {memoryStats.conversation_count || '0'}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Socratic Method</h3>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p>• Questions guide discovery</p>
+                <p>• No direct answers given</p>
+                <p>• Think out loud</p>
+                <p>• Build on insights</p>
+                <p>• Export for review</p>
+              </div>
+            </div>
+
+            <div className="bg-beige-soft p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">💡 Pro Tip</h4>
+              <p className="text-sm text-gray-700">
+                The more you share your thinking process, the better Harv can guide your learning journey!
+              </p>
             </div>
           </div>
         </div>

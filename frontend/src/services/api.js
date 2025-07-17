@@ -1,124 +1,125 @@
-// Final API Service - Matches Backend Exactly
-const BASE_URL = 'http://127.0.0.1:8000';
+// Complete Harv API Service - Matches your FastAPI backend exactly
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 class ApiService {
   constructor() {
+    this.baseURL = API_BASE;
     this.token = localStorage.getItem('token');
   }
 
-  // Login: OAuth2 form data format (CONFIRMED WORKING)
-  async login(credentials) {
-    const formData = new URLSearchParams();
-    formData.append('username', credentials.email);  // Backend expects 'username'
-    formData.append('password', credentials.password);
-    formData.append('grant_type', 'password');
-
-    const response = await fetch(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData
-    });
-
-    const data = await response.json();
-    
-    if (response.ok) {
-      this.token = data.access_token;
-      localStorage.setItem('token', this.token);
-      return {
-        success: true,
-        access_token: data.access_token,
-        user: data.user
-      };
+  setToken(token) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('token', token);
     } else {
-      throw new Error(data.detail || 'Login failed');
+      localStorage.removeItem('token');
     }
   }
 
-  // Register: JSON format with REQUIRED name field + username field
-  async register(userData) {
-    // Backend requires: name (required), username field (for success)
-    const registrationData = {
-      email: userData.email,
-      password: userData.password,
-      name: userData.name || userData.email.split('@')[0], // REQUIRED field
-      username: userData.email, // Helps with backend processing
-      reason: userData.reason || 'Learning mass communication',
-      familiarity: userData.familiarity || 'Beginner',
-      learning_style: userData.learning_style || 'Mixed'
-    };
-
-    const response = await fetch(`${BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(registrationData)
-    });
-
-    const data = await response.json();
-    
-    if (response.ok) {
-      return {
-        success: true,
-        user: data.user || data,
-        message: data.message || 'Registration successful'
-      };
-    } else {
-      // Handle specific error cases
-      if (response.status === 400 && data.detail?.includes('already registered')) {
-        throw new Error('Email already registered. Please try logging in instead.');
-      }
-      throw new Error(data.detail || 'Registration failed');
-    }
-  }
-
-  // Authenticated API calls
-  async apiCall(endpoint, method = 'GET', data = null) {
+  async request(endpoint, options = {}) {
     const headers = {
-      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json',
+      ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      ...options.headers,
     };
 
-    const options = { method, headers };
+    try {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        ...options,
+        headers,
+      });
 
-    if (data && method !== 'GET') {
-      headers['Content-Type'] = 'application/json';
-      options.body = JSON.stringify(data);
-    }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, options);
-    
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
     }
-    
-    return await response.json();
   }
 
-  // Get modules
+  // Authentication endpoints
+  async register(userData) {
+    const response = await this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    
+    if (response.access_token) {
+      this.setToken(response.access_token);
+    }
+    
+    return response;
+  }
+
+  async login(credentials) {
+    const response = await this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+    
+    if (response.access_token) {
+      this.setToken(response.access_token);
+    }
+    
+    return response;
+  }
+
+  logout() {
+    this.setToken(null);
+    localStorage.removeItem('user');
+  }
+
+  // Module endpoints
   async getModules() {
-    return this.apiCall('/modules');
+    return this.request('/modules');
   }
 
-  // Send chat message
-  async sendMessage(message, moduleId = 1) {
-    return this.apiCall('/chat/', 'POST', {
-      message: message,
-      module_id: moduleId
+  async getModuleConfig(id) {
+    return this.request(`/modules/${id}/config`);
+  }
+
+  // Chat endpoints - Your Socratic engine
+  async sendMessage(data) {
+    return this.request('/chat/', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 
-  // Get memory stats
-  async getMemoryStats(userId) {
-    return this.apiCall(`/memory/stats/${userId}`);
+  async getConversationHistory(data) {
+    return this.request('/conversation/history', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
-  // Logout
-  logout() {
-    this.token = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  // Memory system
+  async getMemoryStats(moduleId) {
+    return this.request(`/memory/stats/${moduleId}`);
+  }
+
+  async saveMemorySummary(data) {
+    return this.request('/memory/summary', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Export functionality
+  async exportConversation(data) {
+    return this.request('/export', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Health check
+  async healthCheck() {
+    return this.request('/health');
   }
 }
 

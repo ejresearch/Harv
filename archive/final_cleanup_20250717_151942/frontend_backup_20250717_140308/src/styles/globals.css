@@ -1,0 +1,346 @@
+/* Harv Platform - Primer Initiative Design System */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+/* Color Palette */
+:root {
+  --primary-green: #3E5641;
+  --beige-bg: #D6CDB8;
+  --standard-black: #222222;
+  --accent-white: #FFFFFF;
+  
+  /* Additional utility colors */
+  --light-green: #5a7a5e;
+  --dark-green: #2d3f30;
+  --warm-beige: #e0d7c2;
+  --soft-shadow: rgba(62, 86, 65, 0.1);
+}
+
+/* Global Resets and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: var(--beige-bg);
+  color: var(--standard-black);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+/* Typography Hierarchy */
+h1 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 2rem;
+  color: var(--primary-green);
+  margin-bottom: 0.8rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--primary-green);
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+}
+
+h4 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 1.25rem;
+  color: var(--standard-black);
+  margin-bottom: 0.5rem;
+}
+
+p {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 1rem;
+  color: var(--standard-black);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Button Styles - Large, Clear, Optimized for Desktop and Mobile */
+.btn-primary {
+  background-color: var(--primary-green);
+  color: var(--accent-white);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 48px; /* Touch-friendly */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--dark-green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--soft-shadow);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--primary-green);
+  border: 2px solid var(--primary-green);
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-green);
+  color: var(--accent-white);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--soft-shadow);
+}
+
+/* Form Elements */
+input, select, textarea {
+  font-family: 'Nunito', sans-serif;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: var(--accent-white);
+  color: var(--standard-black);
+  width: 100%;
+  margin-bottom: 1rem;
+  transition: border-color 0.3s ease;
+  min-height: 48px; /* Touch-friendly */
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(62, 86, 65, 0.1);
+}
+
+input::placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+/* Card Styles */
+.card {
+  background-color: var(--accent-white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+
+/* Logo Styles */
+.logo {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.leaf-curl {
+  font-size: 1.5rem;
+  margin-left: 0.25rem;
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-8 {
+  gap: 2rem;
+}
+
+/* Grid System for Modules */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Spacing System - Generous and Consistent */
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.m-4 { margin: 1rem; }
+.m-6 { margin: 1.5rem; }
+.m-8 { margin: 2rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  .btn-primary, .btn-secondary {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .module-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .container {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+.card-interactive:focus {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 2px;
+}
+
+/* Nurturing, Clean Design Elements */
+.page {
+  min-height: 100vh;
+  background-color: var(--beige-bg);
+  padding: 2rem 0;
+}
+
+.centered-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Chat Interface Styles */
+.chat-container {
+  background-color: var(--accent-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.message {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message-user {
+  background-color: var(--beige-bg);
+  color: var(--standard-black);
+  margin-left: auto;
+}
+
+.message-assistant {
+  background-color: var(--primary-green);
+  color: var(--accent-white);
+  margin-right: auto;
+}
+
+/* Loading and State Indicators */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--beige-bg);
+  border-radius: 50%;
+  border-top-color: var(--primary-green);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
