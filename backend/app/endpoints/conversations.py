@@ -21,7 +21,7 @@ def export_conversations(user_id: int, db: Session = Depends(get_db)):
                 {
                     "id": conv.id,
                     "message": getattr(conv, 'message', 'N/A'),
-                    "response": getattr(conv, 'response', 'N/A'),
+                    "reply": getattr(conv, 'response', 'N/A'),
                     "module_id": conv.module_id,
                     "created_at": str(conv.created_at)
                 }

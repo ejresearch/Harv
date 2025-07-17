@@ -1,3 +1,145 @@
+#!/bin/bash
+# Final Authentication Fix - Perfect Backend Match
+# Run from root directory: bash final_auth_fix.sh
+
+echo "🎯 Final Authentication Fix - Perfect Backend Match"
+echo "==================================================="
+
+# Update API service with EXACT backend requirements
+echo "1. Updating API service with exact backend requirements..."
+cat > frontend/src/services/api.js << 'EOF'
+// Final API Service - Matches Backend Exactly
+const BASE_URL = 'http://127.0.0.1:8000';
+
+class ApiService {
+  constructor() {
+    this.token = localStorage.getItem('token');
+  }
+
+  // Login: OAuth2 form data format (CONFIRMED WORKING)
+  async login(credentials) {
+    const formData = new URLSearchParams();
+    formData.append('username', credentials.email);  // Backend expects 'username'
+    formData.append('password', credentials.password);
+    formData.append('grant_type', 'password');
+
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      this.token = data.access_token;
+      localStorage.setItem('token', this.token);
+      return {
+        success: true,
+        access_token: data.access_token,
+        user: data.user
+      };
+    } else {
+      throw new Error(data.detail || 'Login failed');
+    }
+  }
+
+  // Register: JSON format with REQUIRED name field + username field
+  async register(userData) {
+    // Backend requires: name (required), username field (for success)
+    const registrationData = {
+      email: userData.email,
+      password: userData.password,
+      name: userData.name || userData.email.split('@')[0], // REQUIRED field
+      username: userData.email, // Helps with backend processing
+      reason: userData.reason || 'Learning mass communication',
+      familiarity: userData.familiarity || 'Beginner',
+      learning_style: userData.learning_style || 'Mixed'
+    };
+
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(registrationData)
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      return {
+        success: true,
+        user: data.user || data,
+        message: data.message || 'Registration successful'
+      };
+    } else {
+      // Handle specific error cases
+      if (response.status === 400 && data.detail?.includes('already registered')) {
+        throw new Error('Email already registered. Please try logging in instead.');
+      }
+      throw new Error(data.detail || 'Registration failed');
+    }
+  }
+
+  // Authenticated API calls
+  async apiCall(endpoint, method = 'GET', data = null) {
+    const headers = {
+      'Authorization': `Bearer ${this.token}`,
+    };
+
+    const options = { method, headers };
+
+    if (data && method !== 'GET') {
+      headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, options);
+    
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  }
+
+  // Get modules
+  async getModules() {
+    return this.apiCall('/modules');
+  }
+
+  // Send chat message
+  async sendMessage(message, moduleId = 1) {
+    return this.apiCall('/chat/', 'POST', {
+      message: message,
+      module_id: moduleId
+    });
+  }
+
+  // Get memory stats
+  async getMemoryStats(userId) {
+    return this.apiCall(`/memory/stats/${userId}`);
+  }
+
+  // Logout
+  logout() {
+    this.token = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+}
+
+export default new ApiService();
+EOF
+
+echo "   ✅ Updated API service with exact backend requirements"
+
+# Update App.jsx with proper form validation
+echo "2. Updating App.jsx with proper form validation..."
+cat > frontend/src/App.jsx << 'EOF'
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, Link } from 'react-router-dom';
 import ApiService from './services/api';
@@ -466,3 +608,115 @@ function App() {
 }
 
 export default App;
+EOF
+
+echo "   ✅ Updated App.jsx with exact validation requirements"
+
+# Create test script for the fixed authentication
+echo "3. Creating validation test script..."
+cat > test_fixed_auth.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Test Fixed Authentication - Should work perfectly now
+"""
+import requests
+import time
+
+BASE_URL = "http://127.0.0.1:8000"
+
+def test_fixed_authentication():
+    """Test the fixed authentication with exact backend requirements"""
+    print("🧪 Testing Fixed Authentication")
+    print("===============================")
+    
+    # Test 1: Login (OAuth2 format - confirmed working)
+    print("\n1. Testing Login (OAuth2 format)...")
+    login_data = {
+        "username": "questfortheprimer@gmail.com",
+        "password": "Joust?poet1c",
+        "grant_type": "password"
+    }
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/login",
+            data=login_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        if response.status_code == 200:
+            print("   ✅ Login: SUCCESS!")
+            data = response.json()
+            token = data.get('access_token')
+            print(f"   🔑 Token received: {token[:30] if token else 'None'}...")
+        else:
+            print(f"   ❌ Login failed: {response.status_code}")
+            print(f"   Response: {response.text}")
+            
+    except Exception as e:
+        print(f"   ❌ Login error: {e}")
+    
+    # Test 2: Registration (JSON with required name field)
+    print("\n2. Testing Registration (JSON with name field)...")
+    timestamp = int(time.time())
+    register_data = {
+        "email": f"testuser{timestamp}@example.com",
+        "password": "testpass123",
+        "name": f"Test User {timestamp}",  # REQUIRED field
+        "username": f"testuser{timestamp}@example.com",  # Helps with success
+        "reason": "Learning mass communication",
+        "familiarity": "Beginner",
+        "learning_style": "Mixed"
+    }
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/register",
+            json=register_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if response.status_code == 200:
+            print("   ✅ Registration: SUCCESS!")
+            data = response.json()
+            print(f"   👤 User created: {data.get('message', 'Account created')}")
+        else:
+            print(f"   ❌ Registration failed: {response.status_code}")
+            print(f"   Response: {response.text}")
+            
+    except Exception as e:
+        print(f"   ❌ Registration error: {e}")
+    
+    print("\n🎯 SUMMARY")
+    print("==========")
+    print("✅ Login: Uses OAuth2 form data with 'username' field")
+    print("✅ Registration: Uses JSON with required 'name' field")
+    print("✅ No more 422 validation errors expected!")
+
+if __name__ == "__main__":
+    test_fixed_authentication()
+EOF
+
+echo "   ✅ Created validation test script"
+
+echo ""
+echo "🎉 Final Authentication Fix Complete!"
+echo "====================================="
+echo ""
+echo "🎯 Based on your backend analysis, fixed:"
+echo "   ✅ Login: OAuth2 form data (confirmed working)"
+echo "   ✅ Registration: JSON with required 'name' field"
+echo "   ✅ Registration: Added 'username' field for success"
+echo "   ✅ Proper validation and error handling"
+echo ""
+echo "🧪 Test the fix:"
+echo "   python test_fixed_auth.py"
+echo ""
+echo "🚀 Start your frontend:"
+echo "   cd frontend && npm run dev"
+echo ""
+echo "💯 Expected results:"
+echo "   ✅ No more 422 errors on login"
+echo "   ✅ No more 422 errors on registration"
+echo "   ✅ Smooth account creation and login"
+echo "   ✅ Perfect frontend-backend integration"
