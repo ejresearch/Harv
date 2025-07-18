@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harv - Unified Interface</title>
+    <title>Harv - Enhanced Unified Interface</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
@@ -60,6 +60,7 @@
 
         .status-connected { color: #28a745; }
         .status-error { color: #dc3545; }
+        .status-enhanced { color: #007bff; }
 
         .module-list {
             flex: 1;
@@ -403,99 +404,211 @@
             display: flex;
             gap: 15px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
-        .memory-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        .memory-section {
             margin-bottom: 20px;
-        }
-
-        .memory-layer {
             background: white;
             border: 1px solid #e9ecef;
             border-radius: 8px;
             overflow: hidden;
         }
 
-        .layer-header {
+        .memory-section h3 {
             padding: 12px 16px;
-            font-weight: 600;
+            background: #f8f9fa;
+            margin: 0;
             font-size: 14px;
+            font-weight: 600;
             border-bottom: 1px solid #e9ecef;
         }
 
-        .layer-header.system { background: #e3f2fd; color: #1565c0; }
-        .layer-header.module { background: #f3e5f5; color: #7b1fa2; }
-        .layer-header.conversation { background: #e8f5e8; color: #2e7d32; }
-        .layer-header.user { background: #fff3e0; color: #ef6c00; }
-
-        .layer-content {
+        .memory-details {
             padding: 16px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 12px;
         }
 
-        .memory-item {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #f8f9fa;
-        }
-
-        .memory-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .memory-label {
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 4px;
-            font-size: 11px;
-        }
-
-        .memory-value {
-            color: #2c3e50;
-            background: #f8f9fa;
-            padding: 6px 8px;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-size: 11px;
+        .memory-details p {
+            margin-bottom: 8px;
+            font-size: 13px;
             line-height: 1.4;
         }
 
-        .assembled-context {
+        .memory-details p:last-child {
+            margin-bottom: 0;
+        }
+
+        .memory-details strong {
+            color: #3E5641;
+        }
+
+        .enhanced-memory-display {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .memory-metrics-card {
+            background: #e8f4fd;
+            border: 2px solid #3E5641;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .memory-metrics-card h3 {
+            color: #3E5641;
+            margin-bottom: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 10px;
             background: white;
+            border-radius: 6px;
+        }
+
+        .metric label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .metric .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #3E5641;
+        }
+
+        .memory-distribution {
+            display: flex;
+            width: 100%;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .layer.system { background: linear-gradient(45deg, #007bff, #0056b3); }
+        .layer.module { background: linear-gradient(45deg, #28a745, #1e7e34); }
+        .layer.conversation { background: linear-gradient(45deg, #ffc107, #e0a800); color: #000; }
+        .layer.prior { background: linear-gradient(45deg, #dc3545, #bd2130); }
+
+        .memory-layer {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3E5641;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .memory-layer h4 {
+            margin: 0 0 10px 0;
+            color: #3E5641;
+            font-size: 14px;
+        }
+
+        .layer-content p {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .indicator.active {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .indicator.inactive {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+        }
+
+        .prompt-preview-card {
+            background: #f1f3f4;
             border: 1px solid #e9ecef;
             border-radius: 8px;
+            margin-top: 15px;
             overflow: hidden;
         }
 
-        .context-header {
-            padding: 12px 16px;
+        .prompt-preview-card h3 {
             background: #3E5641;
             color: white;
-            font-weight: 600;
+            padding: 12px 16px;
+            margin: 0;
             font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
-        .context-content {
-            padding: 16px;
-            max-height: 400px;
-            overflow-y: auto;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        .prompt-content {
+            padding: 15px;
+        }
+
+        .prompt-content pre {
+            margin: 0;
+            white-space: pre-wrap;
             font-size: 11px;
             line-height: 1.4;
-            background: #f8f9fa;
-            white-space: pre-wrap;
-            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .prompt-content button {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .prompt-content button:hover {
+            background: #0056b3;
         }
 
         .status-bar {
@@ -508,14 +621,25 @@
             justify-content: space-between;
             align-items: center;
         }
+
+        .enhanced-badge {
+            background: linear-gradient(45deg, #007bff, #28a745);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">🌱 harv unified</div>
-                <div class="subtitle">Configure • Chat • Memory</div>
+                <div class="logo">🌱 harv unified <span class="enhanced-badge">Enhanced</span></div>
+                <div class="subtitle">Configure • Chat • Enhanced Memory</div>
             </div>
             
             <div class="connection-status" id="connectionStatus">
@@ -543,23 +667,23 @@
                 
                 <div class="configure-content">
                     <div class="form-group">
-                        <label for="systemPrompt">System Prompt</label>
-                        <textarea id="systemPrompt" placeholder="Set the overall teaching approach and Socratic methodology..." disabled></textarea>
+                        <label for="systemPrompt">System Prompt - Socratic Teaching Approach</label>
+                        <textarea id="systemPrompt" placeholder="Define the overall Socratic methodology for guiding students to discover communication theory principles through strategic questioning..." disabled></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="modulePrompt">Module-Specific Prompt</label>
-                        <textarea id="modulePrompt" placeholder="Define how to teach this specific topic using Socratic questioning..." disabled></textarea>
+                        <label for="modulePrompt">Module-Specific Learning Objectives</label>
+                        <textarea id="modulePrompt" placeholder="Specific learning objectives and key concepts for this communication media module using Socratic discovery methods..." disabled></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="memoryRules">Memory Extraction Rules</label>
-                        <textarea id="memoryRules" placeholder="What should the AI remember and extract from conversations in this module..." disabled></textarea>
+                        <label for="memoryRules">Communication Theory Knowledge Base</label>
+                        <textarea id="memoryRules" placeholder="Core communication theories, media effects research, and foundational concepts relevant to this module..." disabled></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="moduleCorpus">Knowledge Base</label>
-                        <textarea id="moduleCorpus" placeholder="Key concepts, resources, and background knowledge for this module..." disabled></textarea>
+                        <label for="moduleCorpus">Current Examples & Applications</label>
+                        <textarea id="moduleCorpus" placeholder="Contemporary examples, case studies, and real-world applications of communication theory for this module..." disabled></textarea>
                     </div>
                 </div>
 
@@ -581,16 +705,16 @@
                 <div class="chat-container">
                     <div class="messages" id="messages">
                         <div class="welcome-message">
-                            <div class="welcome-icon">🎓</div>
-                            <h3>Ready to Test!</h3>
-                            <p>Select a module and start chatting to test your Socratic configuration.</p>
+                            <div class="welcome-icon">📚</div>
+                            <h3>Communication Media & Society</h3>
+                            <p>Select a module to explore media theory, technology, and cultural impact through Socratic dialogue.</p>
                         </div>
                     </div>
 
                     <div class="input-container">
                         <form class="input-form" id="messageForm">
                             <div class="input-wrapper">
-                                <textarea class="message-input" id="messageInput" placeholder="Ask a question to test the module..." disabled rows="1"></textarea>
+                                <textarea class="message-input" id="messageInput" placeholder="Ask about communication theory, media effects, or how this medium shapes society..." disabled rows="1"></textarea>
                             </div>
                             <button type="submit" class="send-button" id="sendButton" disabled>Send</button>
                         </form>
@@ -598,64 +722,32 @@
                 </div>
             </div>
 
-            <!-- Memory Tab -->
+            <!-- Enhanced Memory Tab -->
             <div class="tab-content" id="memory-tab">
                 <div class="memory-controls">
-                    <button id="refreshMemoryBtn">Refresh Memory</button>
-                    <button id="assembleContextBtn" class="primary">Assemble Context</button>
-                    <span id="memoryStatus">Select a module to view memory layers</span>
+                    <button id="refreshMemoryBtn">🔄 Refresh Memory</button>
+                    <button id="assembleContextBtn" class="primary">🧠 Load Enhanced Memory</button>
+                    <span id="memoryStatus">Select a module to view enhanced memory layers</span>
                 </div>
 
-                <div class="memory-content">
-                    <div class="memory-grid">
-                        <div class="memory-layer">
-                            <div class="layer-header system">📚 Layer 1: System Memory</div>
-                            <div class="layer-content" id="systemMemory">
-                                <div style="text-align: center; padding: 20px; color: #6c757d;">Select a module to view system memory...</div>
-                            </div>
-                        </div>
-
-                        <div class="memory-layer">
-                            <div class="layer-header module">🎯 Layer 2: Module Memory</div>
-                            <div class="layer-content" id="moduleMemory">
-                                <div style="text-align: center; padding: 20px; color: #6c757d;">Select a module to view module memory...</div>
-                            </div>
-                        </div>
-
-                        <div class="memory-layer">
-                            <div class="layer-header conversation">💬 Layer 3: Conversation Memory</div>
-                            <div class="layer-content" id="conversationMemory">
-                                <div style="text-align: center; padding: 20px; color: #6c757d;">Start a conversation to view conversation memory...</div>
-                            </div>
-                        </div>
-
-                        <div class="memory-layer">
-                            <div class="layer-header user">👤 Layer 4: User Context</div>
-                            <div class="layer-content" id="userContext">
-                                <div style="text-align: center; padding: 20px; color: #6c757d;">User context will appear here...</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="assembled-context">
-                        <div class="context-header">
-                            <span>🧠 Assembled Memory Context (Sent to AI)</span>
-                            <span id="contextStats">0 characters</span>
-                        </div>
-                        <div class="context-content" id="assembledContext">Click "Assemble Context" to see the full memory context that gets sent to the AI for generating responses...</div>
+                <div class="memory-content" id="memory-content">
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🧠</div>
+                        <h3>Enhanced Memory System</h3>
+                        <p>Select a module to view the enhanced dynamic memory layers with real-time metrics.</p>
                     </div>
                 </div>
             </div>
 
             <div class="status-bar">
-                <span id="statusMessage">Ready • Select a module to begin</span>
-                <span id="contextStats2">Dynamic memory system active</span>
+                <span id="statusMessage">Ready • Enhanced Memory System Active</span>
+                <span id="contextStats2">Dynamic memory system with 4-layer architecture</span>
             </div>
         </div>
     </div>
 
     <script>
-        class HarvUnifiedInterface {
+        class HarvEnhancedInterface {
             constructor() {
                 this.baseURL = 'http://127.0.0.1:8000';
                 this.currentModule = null;
@@ -663,6 +755,7 @@
                 this.isEditing = false;
                 this.messages = [];
                 this.currentTab = 'configure';
+                this.currentMessage = '';
                 
                 this.init();
             }
@@ -701,12 +794,7 @@
                     refreshMemoryBtn: document.getElementById('refreshMemoryBtn'),
                     assembleContextBtn: document.getElementById('assembleContextBtn'),
                     memoryStatus: document.getElementById('memoryStatus'),
-                    systemMemory: document.getElementById('systemMemory'),
-                    moduleMemory: document.getElementById('moduleMemory'),
-                    conversationMemory: document.getElementById('conversationMemory'),
-                    userContext: document.getElementById('userContext'),
-                    assembledContext: document.getElementById('assembledContext'),
-                    contextStats: document.getElementById('contextStats'),
+                    memoryContent: document.getElementById('memory-content'),
                     
                     statusMessage: document.getElementById('statusMessage')
                 };
@@ -722,17 +810,17 @@
                 this.elements.cancelBtn.addEventListener('click', () => this.cancelEdit());
                 this.elements.resetBtn.addEventListener('click', () => this.resetConfig());
                 
-                this.elements.messageForm.addEventListener('submit', (e) => this.handleSubmit(e));
+                this.elements.messageForm.addEventListener('submit', (e) => this.sendMessage(e));
                 this.elements.messageInput.addEventListener('input', () => this.autoResize());
                 this.elements.messageInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        this.handleSubmit(e);
+                        this.sendMessage(e);
                     }
                 });
                 
-                this.elements.refreshMemoryBtn.addEventListener('click', () => this.refreshMemory());
-                this.elements.assembleContextBtn.addEventListener('click', () => this.assembleContext());
+                this.elements.refreshMemoryBtn.addEventListener('click', () => this.loadEnhancedMemoryMetrics());
+                this.elements.assembleContextBtn.addEventListener('click', () => this.loadEnhancedMemoryMetrics());
             }
 
             switchTab(tabName) {
@@ -748,7 +836,7 @@
                 this.updateStatus(`Switched to ${tabName} tab`);
                 
                 if (tabName === 'memory' && this.currentModule) {
-                    this.refreshMemory();
+                    this.loadEnhancedMemoryMetrics();
                 }
             }
 
@@ -768,7 +856,7 @@
             showConnectionStatus(connected) {
                 const status = this.elements.connectionStatus;
                 if (connected) {
-                    status.innerHTML = '<span class="status-connected">✅ Backend Connected</span>';
+                    status.innerHTML = '<span class="status-enhanced">✅ Enhanced Backend Connected</span>';
                 } else {
                     status.innerHTML = '<span class="status-error">❌ Backend Disconnected</span>';
                 }
@@ -779,7 +867,7 @@
                     const response = await fetch(`${this.baseURL}/modules`);
                     const modules = await response.json();
                     this.renderModules(modules);
-                    this.updateStatus(`Loaded ${modules.length} modules`);
+                    this.updateStatus(`Loaded ${modules.length} modules with enhanced memory`);
                 } catch (error) {
                     console.error('Failed to load modules:', error);
                     this.updateStatus('Failed to load modules', true);
@@ -787,10 +875,11 @@
             }
 
             renderModules(modules) {
+                // Use the actual modules from your database
                 this.elements.moduleList.innerHTML = modules.map(module => `
                     <div class="module-item" onclick="harv.selectModule(${module.id}, '${module.title}', '${module.description}')">
                         <div class="module-title">${module.title}</div>
-                        <div class="module-meta">Module ${module.id} • ${module.system_prompt ? 'Configured' : 'Not configured'}</div>
+                        <div class="module-meta">Module ${module.id} • ${module.system_prompt ? 'Configured' : 'Needs setup'}</div>
                     </div>
                 `).join('');
             }
@@ -806,13 +895,13 @@
                 this.messages = [];
 
                 this.elements.configureHeader.innerHTML = `<h2>${title}</h2><p>${description}</p>`;
-                this.elements.chatHeader.innerHTML = `<h2>Chat: ${title}</h2><p>Test your Socratic prompts for this module</p>`;
+                this.elements.chatHeader.innerHTML = `<h2>Chat: ${title}</h2><p>Test enhanced memory system for this module</p>`;
 
                 await this.loadModuleConfig(moduleId);
                 this.resetChat();
                 this.enableInterface();
-                this.elements.memoryStatus.textContent = `Module ${moduleId} selected`;
-                this.updateStatus(`Selected: ${title}`);
+                this.elements.memoryStatus.textContent = `Enhanced memory for Module ${moduleId} ready`;
+                this.updateStatus(`Selected: ${title} - Enhanced memory active`);
             }
 
             async loadModuleConfig(moduleId) {
@@ -821,7 +910,7 @@
                     if (response.ok) {
                         const config = await response.json();
                         this.setConfigFields(config);
-                        this.updateStatus(`Configuration loaded for Module ${moduleId}`);
+                        this.updateStatus(`Enhanced configuration loaded for Module ${moduleId}`);
                     } else {
                         this.clearConfigFields();
                         this.updateStatus('Module not configured yet');
@@ -868,7 +957,7 @@
                 this.elements.saveBtn.disabled = false;
                 this.elements.cancelBtn.disabled = false;
                 
-                this.updateStatus('Editing enabled - make changes and save');
+                this.updateStatus('Enhanced editing enabled - make changes and save');
             }
 
             async saveConfig() {
@@ -888,7 +977,7 @@
 
                     if (response.ok) {
                         this.cancelEdit();
-                        this.updateStatus('Configuration saved successfully');
+                        this.updateStatus('Enhanced configuration saved successfully');
                         await this.loadModules();
                     } else {
                         this.updateStatus('Failed to save configuration', true);
@@ -932,25 +1021,27 @@
                 this.elements.messages.innerHTML = `
                     <div class="welcome-message">
                         <div class="welcome-icon">🌱</div>
-                        <h3>Testing: ${moduleName}</h3>
-                        <p>Start chatting to test your configured Socratic prompts and memory system.</p>
+                        <h3>Exploring: ${moduleName}</h3>
+                        <p>Ready to explore communication theory through Socratic questioning. What aspects of ${moduleName.toLowerCase()} would you like to discover?</p>
                     </div>
                 `;
             }
 
-            async handleSubmit(e) {
+            async sendMessage(e) {
                 e.preventDefault();
                 
                 const message = this.elements.messageInput.value.trim();
                 if (!message || !this.currentModule) return;
 
+                this.currentMessage = message;
                 this.addMessage('user', message);
                 this.elements.messageInput.value = '';
                 this.autoResize();
                 this.showTyping();
 
                 try {
-                    const response = await fetch(`${this.baseURL}/chat/`, {
+                    // Try enhanced chat first
+                    let response = await fetch(`${this.baseURL}/chat/enhanced`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -960,6 +1051,20 @@
                             user_id: 1
                         })
                     });
+
+                    if (!response.ok) {
+                        // Fallback to regular chat
+                        response = await fetch(`${this.baseURL}/chat/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: message,
+                                module_id: this.currentModule,
+                                conversation_id: this.conversationId,
+                                user_id: 1
+                            })
+                        });
+                    }
 
                     const data = await response.json();
                     
@@ -971,7 +1076,14 @@
                     this.addMessage('assistant', data.reply || 'I apologize, but I encountered an error.');
                     
                     if (data.memory_metrics) {
-                        this.updateStatus(`Response received • Memory: ${data.memory_metrics.total_chars} chars`);
+                        this.updateStatus(`Enhanced response • Memory: ${data.memory_metrics.total_chars} chars • Score: ${Math.round(data.memory_metrics.optimization_score)}/100`);
+                    } else {
+                        this.updateStatus('Response received (standard memory)');
+                    }
+
+                    // Auto-refresh memory tab if it's active
+                    if (this.currentTab === 'memory') {
+                        setTimeout(() => this.loadEnhancedMemoryMetrics(), 1000);
                     }
 
                 } catch (error) {
@@ -1034,92 +1146,191 @@
                 textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
             }
 
-            async refreshMemory() {
+            async loadEnhancedMemoryMetrics() {
                 if (!this.currentModule) {
-                    this.updateStatus('Select a module to view memory');
+                    this.elements.memoryContent.innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🧠</div>
+                            <h3>Enhanced Memory System</h3>
+                            <p>Select a module to view enhanced memory layers with real-time metrics.</p>
+                        </div>
+                    `;
                     return;
                 }
 
                 try {
-                    const response = await fetch(`${this.baseURL}/memory/1/${this.currentModule}`);
+                    // Try enhanced memory endpoint first
+                    let response = await fetch(`${this.baseURL}/memory/enhanced/${this.currentModule}?user_id=1`);
+                    
                     if (response.ok) {
-                        const data = await response.json();
-                        this.displayMemoryLayers(data.memory_layers);
-                        this.updateStatus('Memory layers refreshed');
+                        const memoryData = await response.json();
+                        this.displayEnhancedMemory(memoryData);
+                        this.updateStatus('Enhanced memory metrics loaded successfully');
+                    } else {
+                        // Fallback to basic memory display
+                        this.displayBasicMemory();
+                        this.updateStatus('Using basic memory system (enhanced not available)');
                     }
                 } catch (error) {
-                    this.updateStatus('Error loading memory', true);
+                    console.error('Enhanced memory error:', error);
+                    this.displayBasicMemory();
+                    this.updateStatus('Error loading enhanced memory - using fallback');
                 }
             }
 
-            displayMemoryLayers(layers) {
-                this.elements.systemMemory.innerHTML = `
-                    <div class="memory-item">
-                        <div class="memory-label">Learning Style</div>
-                        <div class="memory-value">${layers.system.user_profile.learning_style}</div>
-                    </div>
-                    <div class="memory-item">
-                        <div class="memory-label">Pace</div>
-                        <div class="memory-value">${layers.system.user_profile.pace}</div>
-                    </div>
-                `;
+            displayEnhancedMemory(memoryData) {
+                this.elements.memoryContent.innerHTML = `
+                    <div class="enhanced-memory-display">
+                        <!-- Dynamic Memory Metrics -->
+                        <div class="memory-metrics-card">
+                            <h3>🧠 Enhanced Dynamic Memory Metrics</h3>
+                            <div class="metrics-grid">
+                                <div class="metric">
+                                    <label>Context Length</label>
+                                    <span class="value">${memoryData.context_metrics?.total_chars || 0}</span>
+                                </div>
+                                <div class="metric">
+                                    <label>Optimization Score</label>
+                                    <span class="value">${Math.round(memoryData.context_metrics?.optimization_score || 0)}/100</span>
+                                </div>
+                                <div class="metric">
+                                    <label>Memory Layers</label>
+                                    <span class="value">4 Active</span>
+                                </div>
+                            </div>
+                            <div class="memory-distribution">
+                                <div class="layer system" style="width: ${memoryData.context_metrics?.system_weight || 25}%">
+                                    System (${memoryData.context_metrics?.system_weight || 25}%)
+                                </div>
+                                <div class="layer module" style="width: ${memoryData.context_metrics?.module_weight || 35}%">
+                                    Module (${memoryData.context_metrics?.module_weight || 35}%)
+                                </div>
+                                <div class="layer conversation" style="width: ${memoryData.context_metrics?.conversation_weight || 25}%">
+                                    Conversation (${memoryData.context_metrics?.conversation_weight || 25}%)
+                                </div>
+                                <div class="layer prior" style="width: ${memoryData.context_metrics?.prior_weight || 15}%">
+                                    Prior (${memoryData.context_metrics?.prior_weight || 15}%)
+                                </div>
+                            </div>
+                        </div>
 
-                this.elements.moduleMemory.innerHTML = `
-                    <div class="memory-item">
-                        <div class="memory-label">Module Title</div>
-                        <div class="memory-value">${layers.module.module_info.title || 'Not loaded'}</div>
-                    </div>
-                    <div class="memory-item">
-                        <div class="memory-label">System Prompt</div>
-                        <div class="memory-value">${layers.module.teaching_configuration.system_prompt || 'Not configured'}</div>
-                    </div>
-                `;
+                        <!-- Memory Layers -->
+                        <div class="memory-section">
+                            <h3>📊 Enhanced Memory Layers</h3>
+                            <div class="memory-details">
+                                <div class="memory-layer">
+                                    <h4>🔵 System Data Layer</h4>
+                                    <div class="layer-content">
+                                        <p><strong>Learning Profile:</strong> ${memoryData.memory_layers?.system_data?.learning_profile?.style || 'Adaptive'} learner, ${memoryData.memory_layers?.system_data?.learning_profile?.pace || 'moderate'} pace</p>
+                                        <p><strong>Prior Modules:</strong> ${memoryData.memory_layers?.system_data?.cross_module_mastery?.length || 0} previous interactions</p>
+                                        <p><strong>Background:</strong> ${memoryData.memory_layers?.system_data?.learning_profile?.background || 'Beginner'}</p>
+                                    </div>
+                                </div>
 
-                this.elements.conversationMemory.innerHTML = `
-                    <div class="memory-item">
-                        <div class="memory-label">State</div>
-                        <div class="memory-value">${layers.conversation.state}</div>
-                    </div>
-                    <div class="memory-item">
-                        <div class="memory-label">Recent Conversations</div>
-                        <div class="memory-value">${layers.conversation.recent_conversations || 0}</div>
-                    </div>
-                `;
+                                <div class="memory-layer">
+                                    <h4>🟢 Module Data Layer</h4>
+                                    <div class="layer-content">
+                                        <p><strong>Current Module:</strong> ${memoryData.memory_layers?.module_data?.module_info?.title || 'Module ' + (this.currentModule || 1)}</p>
+                                        <p><strong>Teaching Strategy:</strong> ${memoryData.memory_layers?.module_data?.socratic_strategy || 'Socratic questioning'}</p>
+                                        <p><strong>System Prompt:</strong> ${memoryData.memory_layers?.module_data?.teaching_configuration?.system_prompt ? 'Custom configured' : 'Default settings'}</p>
+                                        <p><strong>Module Prompt:</strong> ${memoryData.memory_layers?.module_data?.teaching_configuration?.module_prompt ? 'Enhanced active' : 'Basic'}</p>
+                                    </div>
+                                </div>
 
-                this.elements.userContext.innerHTML = `
-                    <div class="memory-item">
-                        <div class="memory-label">Total Conversations</div>
-                        <div class="memory-value">${layers.prior.total_conversations}</div>
-                    </div>
-                    <div class="memory-item">
-                        <div class="memory-label">Learning Trajectory</div>
-                        <div class="memory-value">${layers.prior.learning_trajectory}</div>
+                                <div class="memory-layer">
+                                    <h4>🟡 Conversation Data Layer</h4>
+                                    <div class="layer-content">
+                                        <p><strong>State:</strong> ${memoryData.memory_layers?.conversation_data?.state || 'Ready'}</p>
+                                        <p><strong>Message History:</strong> ${memoryData.memory_layers?.conversation_data?.message_history?.length || 0} exchanges</p>
+                                        <p><strong>Engagement:</strong> ${memoryData.memory_layers?.conversation_data?.conversation_analysis?.engagement_level || 'Starting'}</p>
+                                        <p><strong>Context:</strong> ${memoryData.memory_layers?.conversation_data?.dialogue_context || 'Ready to begin Socratic exploration'}</p>
+                                    </div>
+                                </div>
+
+                                <div class="memory-layer">
+                                    <h4>🔴 Prior Knowledge Layer</h4>
+                                    <div class="layer-content">
+                                        <p><strong>Prior Module Insights:</strong> ${memoryData.memory_layers?.prior_knowledge?.prior_module_insights?.length || 0} connections</p>
+                                        <p><strong>Mastered Concepts:</strong> ${memoryData.memory_layers?.prior_knowledge?.mastered_concepts?.join(', ') || 'Building foundation'}</p>
+                                        ${memoryData.memory_layers?.prior_knowledge?.prior_module_insights?.slice(0, 2).map(insight => 
+                                            `<p><strong>${insight.module_title}:</strong> ${insight.key_insight}</p>`
+                                        ).join('') || ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Database Status -->
+                        <div class="memory-section">
+                            <h3>🔄 Live Database Status</h3>
+                            <div class="memory-details">
+                                <div class="status-grid">
+                                    <div class="status-item">
+                                        <span class="indicator ${memoryData.database_status?.onboarding ? 'active' : 'inactive'}"></span>
+                                        <label>Onboarding Survey Data</label>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="indicator ${memoryData.database_status?.module_config ? 'active' : 'inactive'}"></span>
+                                        <label>Module Configuration</label>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="indicator ${memoryData.database_status?.conversation_analysis ? 'active' : 'inactive'}"></span>
+                                        <label>Conversation Analysis</label>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="indicator ${memoryData.database_status?.cross_module ? 'active' : 'inactive'}"></span>
+                                        <label>Cross-Module Connections</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assembled Prompt Preview -->
+                        <div class="prompt-preview-card">
+                            <h3>🔍 Assembled Memory Context (Sent to AI)</h3>
+                            <div class="prompt-content">
+                                <pre>${memoryData.assembled_prompt || 'No prompt data available'}</pre>
+                                <button onclick="harv.showFullPrompt('${(memoryData.assembled_prompt || '').replace(/'/g, '\\\'').replace(/"/g, '\\"')}')">View Full Context</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
 
-            async assembleContext() {
-                if (!this.currentModule) {
-                    this.elements.assembledContext.textContent = 'Please select a module first.';
-                    this.elements.contextStats.textContent = '0 characters';
-                    return;
-                }
+            displayBasicMemory() {
+                this.elements.memoryContent.innerHTML = `
+                    <div class="memory-section">
+                        <h3>🧠 Basic Memory System</h3>
+                        <div class="memory-details">
+                            <p><strong>Status:</strong> Enhanced memory system not available</p>
+                            <p><strong>Module:</strong> ${this.currentModule ? 'Module ' + this.currentModule : 'No module selected'}</p>
+                            <p><strong>Configuration:</strong> ${this.elements.systemPrompt.value ? 'Custom prompts configured' : 'Default settings'}</p>
+                            <p><strong>Note:</strong> Install enhanced memory system to see dynamic memory layers</p>
+                        </div>
+                    </div>
+                `;
+            }
 
-                const mockContext = `=== HARV DYNAMIC MEMORY SYSTEM ===
-STUDENT: User 1 - adaptive learner, moderate pace
-MODULE: ${this.elements.configureHeader.querySelector('h2').textContent}
-TEACHING APPROACH: ${this.elements.systemPrompt.value || 'Default Socratic approach'}
-MODULE STRATEGY: ${this.elements.modulePrompt.value || 'Guide discovery through questioning'}
-SOCRATIC APPROACH: Guide through strategic questioning, encourage discovery
-MEMORY EXTRACTION:
-- Note breakthrough moments and concept connections
-- Track understanding progression and confusion points
-- Extract insights for cross-module learning`;
-
-                this.elements.assembledContext.textContent = mockContext;
-                this.elements.contextStats.textContent = `${mockContext.length} characters`;
+            showFullPrompt(prompt) {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(0,0,0,0.8); z-index: 1000; display: flex; 
+                    align-items: center; justify-content: center; padding: 20px;
+                `;
                 
-                this.updateStatus('Memory context assembled successfully');
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 8px; max-width: 90%; max-height: 90%; overflow: auto; padding: 20px;">
+                        <h3 style="margin-bottom: 15px;">Complete Assembled Memory Context</h3>
+                        <pre style="white-space: pre-wrap; font-size: 12px; line-height: 1.4; background: #f8f9fa; padding: 15px; border-radius: 4px;">${prompt}</pre>
+                        <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 15px; padding: 8px 16px; background: #3E5641; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
             }
 
             updateStatus(message, isError = false) {
@@ -1128,7 +1339,7 @@ MEMORY EXTRACTION:
             }
         }
 
-        const harv = new HarvUnifiedInterface();
+        const harv = new HarvEnhancedInterface();
     </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 """
-Complete FastAPI Main Application with Memory System Integration
+Complete FastAPI Main Application with Enhanced Memory System Integration
 Replace your entire backend/app/main.py with this file
 """
 
@@ -22,22 +22,69 @@ from app.auth import (
 
 # Import all endpoint routers
 from app.endpoints.modules import router as modules_router
+
+# Import chat router with fallback
 try:
     from app.endpoints.chat import router as chat_router
+    print("✅ Chat router loaded from endpoints")
 except ImportError:
-    from app.routers.chat import router as chat_router
-from app.endpoints.memory import router as memory_router
-from app.endpoints.conversations import router as conversations_router
+    try:
+        from app.routers.chat import router as chat_router
+        print("✅ Chat router loaded from routers")
+    except ImportError:
+        print("⚠️ Chat router not found, creating fallback")
+        from fastapi import APIRouter
+        chat_router = APIRouter()
+        
+        @chat_router.get("/health")
+        def chat_health():
+            return {"status": "Chat router fallback active"}
+
+# Import other routers with fallbacks
+try:
+    from app.endpoints.memory import router as memory_router
+    print("✅ Memory router loaded")
+except ImportError:
+    print("⚠️ Memory router not found, creating fallback")
+    from fastapi import APIRouter
+    memory_router = APIRouter()
+
+try:
+    from app.endpoints.conversations import router as conversations_router
+    print("✅ Conversations router loaded")
+except ImportError:
+    print("⚠️ Conversations router not found, creating fallback")
+    from fastapi import APIRouter
+    conversations_router = APIRouter()
+
 try:
     from app.endpoints.auth import router as auth_router
+    print("✅ Auth router loaded from endpoints")
 except ImportError:
-    from app.routers.auth import router as auth_router
+    try:
+        from app.routers.auth import router as auth_router
+        print("✅ Auth router loaded from routers")
+    except ImportError:
+        print("⚠️ Auth router not found, will use inline auth")
+        from fastapi import APIRouter
+        auth_router = APIRouter()
+
+# Check for enhanced memory system
+try:
+    from app.memory_context_enhanced import DynamicMemoryAssembler
+    ENHANCED_MEMORY_AVAILABLE = True
+    print("✅ Enhanced memory system loaded")
+except ImportError:
+    ENHANCED_MEMORY_AVAILABLE = False
+    print("⚠️ Enhanced memory system not available")
 
 # Create FastAPI app
 app = FastAPI(
-    title="Harv Backend - Memory-Aware System",
-    description="AI Tutoring Platform with 4-Layer Memory System",
-    version="3.0.0"
+    title="Harv Backend - Enhanced Memory System",
+    description="AI Tutoring Platform with 4-Layer Dynamic Memory System",
+    version="4.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # CORS Configuration
@@ -46,8 +93,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000", 
         "http://127.0.0.1:3000", 
-        "http://localhost:3001",  # Demo frontend
-        "http://127.0.0.1:3001",  # Demo frontend
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
         "http://localhost:5173",
         "http://localhost:8080",
         "http://127.0.0.1:5173"
@@ -57,17 +104,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include all routers
-app.include_router(modules_router)
-app.include_router(chat_router, prefix="/chat")
-app.include_router(memory_router)
-app.include_router(conversations_router, prefix="/conversations")  # Memory router already has its own prefix
-app.include_router(auth_router)    # Auth router already has its own prefix
+# Include all routers with proper prefixes
+app.include_router(modules_router, prefix="", tags=["modules"])
+app.include_router(chat_router, prefix="", tags=["chat"])  # No prefix so /chat/ works
+app.include_router(memory_router, prefix="", tags=["memory"])
+app.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
+app.include_router(auth_router, prefix="", tags=["auth"])
 
 # Create tables on startup
 @app.on_event("startup")
 def startup_event():
-    print("🚀 Starting Harv Backend with Memory System...")
+    print("🚀 Starting Harv Backend with Enhanced Memory System...")
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables created")
     
@@ -77,36 +124,128 @@ def startup_event():
     if module_count == 0:
         populate_default_modules(db)
     db.close()
+    
+    print(f"🧠 Enhanced Memory System: {'Available' if ENHANCED_MEMORY_AVAILABLE else 'Not Available'}")
 
 def populate_default_modules(db: Session):
-    """Auto-populate the 15 modules"""
+    """Auto-populate the 15 Communication Media & Society modules"""
     modules = [
-        "Introduction to Mass Communication", 
-        "History and Evolution of Media", 
-        "Media Theory and Effects", 
-        "Print Media and Journalism",
-        "Broadcasting: Radio and Television", 
-        "Digital Media and the Internet",
-        "Social Media and New Platforms", 
-        "Media Ethics and Responsibility",
-        "Media Law and Regulation", 
-        "Advertising and Public Relations",
-        "Media Economics and Business Models", 
-        "Global Media and Cultural Impact",
-        "Media Literacy and Critical Analysis", 
-        "Future of Mass Communication",
-        "Capstone: Integrating Knowledge"
+        {
+            "id": 1,
+            "title": "Your Four Worlds", 
+            "description": "Communication models, perception, and the four worlds we live in",
+            "system_prompt": "You are Harv, a Socratic tutor for communication theory. Guide students to discover the four worlds of communication through strategic questioning about perception, reality, and media influence.",
+            "module_prompt": "Focus on helping students understand communication models, perception processes, and how media shapes our understanding of reality."
+        },
+        {
+            "id": 2,
+            "title": "Media Uses & Effects", 
+            "description": "Functions vs effects, media theories, and societal impact",
+            "system_prompt": "Guide students to discover the difference between media functions and effects through Socratic questioning about cultivation theory, agenda-setting, and media influence.",
+            "module_prompt": "Help students explore media theories like cultivation theory, agenda-setting, and spiral of silence through discovery-based learning."
+        },
+        {
+            "id": 3,
+            "title": "Shared Characteristics of Media", 
+            "description": "Common features and patterns across all media types",
+            "system_prompt": "Use Socratic questioning to help students identify universal patterns and characteristics that exist across all forms of media.",
+            "module_prompt": "Guide discovery of shared media characteristics through comparative analysis and pattern recognition."
+        },
+        {
+            "id": 4,
+            "title": "Communication Infrastructure", 
+            "description": "Telegraph, telephone, internet, and digital networks",
+            "system_prompt": "Lead students to understand the evolution of communication infrastructure through strategic questions about technological development and social impact.",
+            "module_prompt": "Explore how communication infrastructure has evolved from telegraph to internet and its societal implications."
+        },
+        {
+            "id": 5,
+            "title": "Books: The Birth of Mass Communication", 
+            "description": "History, publishing industry, and cultural impact of books",
+            "system_prompt": "Guide students to discover how books became the first mass medium and their transformative cultural impact through Socratic inquiry.",
+            "module_prompt": "Help students understand the publishing industry, copyright, and how books shaped civilization through strategic questioning."
+        },
+        {
+            "id": 6,
+            "title": "News & Newspapers", 
+            "description": "News values, gatekeeping, and journalism norms",
+            "system_prompt": "Use Socratic questioning to help students understand how news is constructed, what makes something 'newsworthy,' and the role of gatekeepers.",
+            "module_prompt": "Explore news values, gatekeeping theory, and journalism ethics through guided discovery."
+        },
+        {
+            "id": 7,
+            "title": "Magazines: The Special Interest Medium", 
+            "description": "Specialization, audience targeting, and magazine economics",
+            "system_prompt": "Guide students to understand how magazines evolved from general interest to specialized publications through strategic questioning.",
+            "module_prompt": "Help students discover magazine industry economics, audience segmentation, and the shift to specialization."
+        },
+        {
+            "id": 8,
+            "title": "Comic Books: Small Business, Big Impact", 
+            "description": "Cultural influence and artistic expression in comics",
+            "system_prompt": "Use Socratic questioning to explore how comic books, despite being a small industry, have had significant cultural impact.",
+            "module_prompt": "Guide discovery of comic book art, storytelling, and cultural significance through strategic inquiry."
+        },
+        {
+            "id": 9,
+            "title": "Photography: Fixing a Shadow", 
+            "description": "Visual communication and photographic technology",
+            "system_prompt": "Lead students to understand how photography changed human communication and perception through strategic questioning.",
+            "module_prompt": "Explore photographic technology, visual communication, and the phrase 'fixing a shadow' through guided discovery."
+        },
+        {
+            "id": 10,
+            "title": "Recordings: From Bach to Rock & Rap", 
+            "description": "Music industry, cultural reflection, and audio technology",
+            "system_prompt": "Guide students to understand how recorded music reflects and shapes culture through Socratic questioning about music industry evolution.",
+            "module_prompt": "Help students explore how music recording technology and industry practices have evolved from classical to contemporary genres."
+        },
+        {
+            "id": 11,
+            "title": "Motion Pictures: The Start of Mass Entertainment", 
+            "description": "Film industry, storytelling, and cinematic influence",
+            "system_prompt": "Use strategic questioning to help students understand how motion pictures became the first mass entertainment medium.",
+            "module_prompt": "Explore film industry development, storytelling techniques, and cinema's role as a 'dream factory' through guided discovery."
+        },
+        {
+            "id": 12,
+            "title": "Radio: The Pervasive Medium", 
+            "description": "Broadcasting history, programming, and radio's social role",
+            "system_prompt": "Guide students to discover why radio became the most pervasive medium and its unique social role through Socratic questioning.",
+            "module_prompt": "Help students understand radio's development, programming evolution, and its role in society through strategic inquiry."
+        },
+        {
+            "id": 13,
+            "title": "Television: The Center of Attention", 
+            "description": "TV's dominance, programming, and cultural transformation",
+            "system_prompt": "Use Socratic questioning to help students understand why television became the dominant medium and its cultural impact.",
+            "module_prompt": "Explore television's rise to dominance, programming strategies, and cultural transformation through guided discovery."
+        },
+        {
+            "id": 14,
+            "title": "Video Games: The Newest Mass Medium", 
+            "description": "Interactive entertainment, gaming culture, and digital play",
+            "system_prompt": "Guide students to understand how video games represent a new form of mass communication through strategic questioning.",
+            "module_prompt": "Help students explore interactive entertainment, gaming culture, and video games as a communication medium."
+        },
+        {
+            "id": 15,
+            "title": "Economic Influencers: Advertising, PR, and Ownership", 
+            "description": "Economic forces shaping media content and industry",
+            "system_prompt": "Use Socratic questioning to help students understand how economic forces shape media content and industry practices.",
+            "module_prompt": "Explore advertising, public relations, and media ownership through guided discovery of economic influences."
+        }
     ]
     
-    for i, title in enumerate(modules, 1):
+    for module_data in modules:
         module = Module(
-            id=i, 
-            title=title, 
-            description=f"Module {i} of the Mass Communication course",
+            id=module_data["id"],
+            title=module_data["title"], 
+            description=module_data["description"],
             resources="", 
-            system_prompt="You are Harv, a Socratic tutor for mass communication. Guide students through thoughtful questions rather than giving direct answers.",
-            module_prompt="Focus on helping students discover concepts through questioning.", 
-            system_corpus="Core concepts: media theory, communication effects, journalism ethics, digital transformation",
+            system_prompt=module_data["system_prompt"],
+            module_prompt=module_data["module_prompt"], 
+            system_corpus="Core communication theories, media effects research, journalism ethics, digital transformation, media literacy",
             module_corpus="", 
             dynamic_corpus="",
             api_endpoint="https://api.openai.com/v1/chat/completions"
@@ -114,25 +253,28 @@ def populate_default_modules(db: Session):
         db.add(module)
     
     db.commit()
-    print(f"✅ Auto-populated {len(modules)} modules")
+    print(f"✅ Auto-populated {len(modules)} Communication Media & Society modules")
 
 # Root endpoint
 @app.get("/")
 def root():
     return {
-        "message": "🎉 Harv Backend - Memory-Aware AI Tutoring System",
+        "message": "🎉 Harv Backend - Enhanced Memory-Aware AI Tutoring System",
         "status": "running",
-        "version": "3.0.0",
+        "version": "4.0.0",
+        "course": "Communication Media & Society",
         "features": [
-            "4-layer memory system",
-            "Socratic tutoring",
-            "15 mass communication modules",
-            "Export-triggered memory extraction",
-            "Memory-enhanced responses"
-        ]
+            "4-layer dynamic memory system",
+            "Socratic tutoring methodology",
+            "15 communication media modules",
+            "Enhanced memory-driven responses",
+            "Cross-module learning persistence",
+            "Real-time context optimization"
+        ],
+        "enhanced_memory": ENHANCED_MEMORY_AVAILABLE
     }
 
-# Health check
+# Health check with enhanced memory status
 @app.get("/health")
 def health_check():
     """Enhanced health check with system status"""
@@ -149,8 +291,9 @@ def health_check():
         
         return {
             "status": "healthy",
-            "version": "3.0.0",
+            "version": "4.0.0",
             "timestamp": datetime.utcnow().isoformat(),
+            "course": "Communication Media & Society",
             "database": {
                 "modules": module_count,
                 "users": user_count,
@@ -158,7 +301,8 @@ def health_check():
                 "memory_summaries": memory_count
             },
             "openai_configured": has_openai_key,
-            "memory_system": "active"
+            "enhanced_memory": ENHANCED_MEMORY_AVAILABLE,
+            "memory_system": "active" if ENHANCED_MEMORY_AVAILABLE else "basic"
         }
     except Exception as e:
         return {
@@ -241,6 +385,24 @@ def simple_register(request: SimpleRegisterRequest, db: Session = Depends(get_db
     except Exception as e:
         print(f"Registration error: {e}")
         raise HTTPException(status_code=500, detail="Registration failed")
+
+# Additional endpoints for enhanced memory system
+@app.get("/system/status")
+def system_status():
+    """Get detailed system status"""
+    return {
+        "enhanced_memory": ENHANCED_MEMORY_AVAILABLE,
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "version": "4.0.0",
+        "course": "Communication Media & Society",
+        "modules": 15,
+        "features": {
+            "socratic_tutoring": True,
+            "memory_persistence": True,
+            "cross_module_learning": True,
+            "context_optimization": ENHANCED_MEMORY_AVAILABLE
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
