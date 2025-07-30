@@ -1,6 +1,303 @@
-harv_venv/
+# HARV Project .gitignore
+
+# ==================== PYTHON ====================
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-node_modules/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+venv/
+ENV/
+env/
+harv_venv/
+backend/venv/
+backend/ENV/
+backend/env/
+.venv/
+myenv/
+*.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# pyenv
+.python-version
+
+# Environments
 .env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+
+# ==================== NODE.JS ====================
+# Dependencies
+node_modules/
+frontend/node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+frontend/coverage/
+
+# Production builds
+/build
+frontend/build/
+frontend/dist/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ==================== DATABASE ====================
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+harv.db
+backend/harv.db
+
+# Database backups
+*.db.backup*
+*.backup
+*_backup_*/
+backup_*/
+backups/
+db_backups/
+backend/harv.db.backup_*
+
+# ==================== EDITORS & IDEs ====================
+# VSCode
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# PyCharm
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ==================== OPERATING SYSTEMS ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==================== PROJECT SPECIFIC ====================
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+tools/dev-gui.html
+
+# Archive directories
+archive/
+archives/
+old/
+deprecated/
+
+# Test files
+test_*.py
+backend/test_*.py
+backend/add_test_module.py
+backend/test_db.py
+
+# Session files
+*.session
+sessions/
+
+# Export files
+exports/
+*.export
+
+# Log files
+logs/
+*.log
+backend/logs/
+frontend/logs/
+
+# Generated files
+backend_backup_*/
+frontend_backup_*/
+
+# Scripts output
+*.out
+*.err
+
+# API Keys and Secrets (NEVER commit these!)
+*.key
+*.pem
+*.cert
+secrets/
+credentials/
+
+# Development tools
+.tools/
+.cache/
+
+# Documentation builds
+docs/_build/
+docs/build/
+
+# Package manager locks (optional - you might want to keep these)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ==================== SPECIAL PATTERNS ====================
+# Any file with 'private' or 'secret' in the name
+*private*
+*secret*
+
+# Backup patterns
+*.bak
+*.orig
+*.old
+*.save
+
+# Compressed files (usually not needed in repo)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Media files (if not needed)
+*.mp4
+*.avi
+*.mov
+*.mp3
+*.wav
+
+# ==================== NOTES ====================
+# This .gitignore is comprehensive for the HARV project
+# It covers Python (backend), Node.js (frontend), databases, and common files
+# Remember: NEVER commit API keys, passwords, or sensitive data!
+# If you accidentally commit sensitive data, remove it from history immediately

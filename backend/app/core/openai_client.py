@@ -1,4 +1,4 @@
-import openai
+from openai import AsyncOpenAI
 import os
 import logging
 from typing import Optional
@@ -6,8 +6,8 @@ from app.models import User, Module, Conversation
 
 logger = logging.getLogger(__name__)
 
-# Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configure OpenAI client
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def get_openai_response(
     message: str, 
@@ -18,7 +18,8 @@ async def get_openai_response(
     """Get response from OpenAI with fallback handling"""
     
     # Check if API key is configured
-    if not openai.api_key or openai.api_key.startswith("sk-proj-fake"):
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("sk-proj-fake"):
         logger.info("Using fallback response - no valid OpenAI key")
         return get_fallback_response(message, module)
     
@@ -31,8 +32,8 @@ async def get_openai_response(
             {"role": "user", "content": message}
         ]
         
-        # Call OpenAI API
-        response = await openai.ChatCompletion.acreate(
+        # Call OpenAI API using new client
+        response = await client.chat.completions.create(
             model="gpt-4",
             messages=messages,
             max_tokens=500,
@@ -41,16 +42,13 @@ async def get_openai_response(
         
         return response.choices[0].message.content.strip()
         
-    except openai.error.AuthenticationError:
-        logger.error("OpenAI authentication failed - using fallback")
-        return get_fallback_response(message, module)
-        
-    except openai.error.RateLimitError:
-        logger.warning("OpenAI rate limit exceeded - using fallback")
-        return get_fallback_response(message, module)
-        
     except Exception as e:
-        logger.error(f"OpenAI API error: {e} - using fallback")
+        if "authentication" in str(e).lower():
+            logger.error("OpenAI authentication failed - using fallback")
+        elif "rate_limit" in str(e).lower():
+            logger.warning("OpenAI rate limit exceeded - using fallback")
+        else:
+            logger.error(f"OpenAI API error: {e} - using fallback")
         return get_fallback_response(message, module)
 
 def get_fallback_response(message: str, module: Module) -> str:

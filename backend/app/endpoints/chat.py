@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User, Module, Conversation
 from pydantic import BaseModel
-import openai
+from openai import OpenAI
 import os
 import json
 from datetime import datetime
@@ -37,8 +37,8 @@ class ChatResponse(BaseModel):
     memory_metrics: Optional[dict] = None
     enhanced: bool = False
 
-# Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configure OpenAI client
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @router.post("/chat/", response_model=ChatResponse)
 async def chat(
@@ -78,8 +78,9 @@ async def chat(
         full_prompt = f"{system_prompt}\n\nMODULE FOCUS: {module_prompt}\n\nRemember: Guide through questions, don't give direct answers."
         
         # Call OpenAI
-        if openai.api_key:
-            response = openai.ChatCompletion.create(
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key and not api_key.startswith("sk-proj-fake"):
+            response = openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": full_prompt},
@@ -131,8 +132,9 @@ async def enhanced_chat(
         optimized_prompt = memory_context['assembled_prompt']
         
         # Send to OpenAI with dynamic context
-        if openai.api_key:
-            response = openai.ChatCompletion.create(
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key and not api_key.startswith("sk-proj-fake"):
+            response = openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": optimized_prompt},
@@ -274,6 +276,6 @@ async def health_check():
     return {
         "status": "healthy",
         "enhanced_memory": ENHANCED_MEMORY_AVAILABLE,
-        "openai_configured": bool(openai.api_key),
+        "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
         "timestamp": datetime.now().isoformat()
     }

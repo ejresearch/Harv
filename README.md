@@ -1,266 +1,414 @@
-# 🌱 Harv - Complete AI-Powered Socratic Learning Platform
+# 🌱 HARV - AI-Powered Socratic Learning Platform
 
-A sophisticated educational platform that uses Socratic questioning to guide students through mass communication concepts.
+**HARV** (Holistic AI Resource for Virtual education) is a sophisticated educational platform that uses AI-powered Socratic questioning to guide students through mass communication concepts. Instead of providing direct answers, HARV asks strategic questions that lead students to discover knowledge themselves.
 
-## 🚀 Quick Start
+## 🎯 Key Features
 
-### One-Command Launch
+- **Socratic AI Tutoring**: Guides learning through strategic questioning
+- **4-Layer Memory System**: Maintains context across conversations
+- **15 Communication Modules**: Complete mass communication curriculum
+- **JWT Authentication**: Secure user sessions
+- **Progress Tracking**: Monitor learning journey
+- **Export Capabilities**: Download conversations for study
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have:
+- Python 3.8+ installed
+- Node.js 18+ and npm installed
+- OpenAI API key (GPT-4 access recommended)
+- SQLite3 (usually pre-installed)
+- 2GB free disk space
+
+## 🚀 Quick Start (5 Minutes)
+
+### 1. Clone and Setup Environment
+
 ```bash
-bash start_complete_platform.sh
+# Clone the repository
+git clone [repository-url]
+cd harv
+
+# Create Python virtual environment
+python3 -m venv harv_venv
+source harv_venv/bin/activate  # On Windows: harv_venv\Scripts\activate
+
+# Install backend dependencies
+cd backend
+pip install -r requirements.txt
+
+# Install frontend dependencies
+cd ../frontend
+npm install --legacy-peer-deps
+cd ..
 ```
 
-### Manual Launch
+### 2. Configure OpenAI API Key
+
 ```bash
-# Terminal 1 - Backend
-bash start_backend.sh
-
-# Terminal 2 - Frontend  
-cd frontend
-npm run dev
+# Create backend environment file
+echo "OPENAI_API_KEY=your-openai-api-key-here" > backend/.env
 ```
 
-## 🎯 What You Get
+Replace `your-openai-api-key-here` with your actual OpenAI API key.
 
-### Complete Platform Features
-- **Landing Page**: Beautiful authentication with form validation
-- **Dashboard**: Module selection with progress tracking
-- **Chat Interface**: Real-time Socratic tutoring with AI
-- **Memory System**: Context-aware conversations
-- **Export System**: Download conversations for study
-- **Responsive Design**: Works on all devices
+### 3. Start the Platform
 
-### Technical Excellence
-- **Frontend**: React 18 + Vite + Tailwind CSS
-- **Backend**: Python FastAPI with SQLite
-- **Authentication**: JWT tokens with protected routes
-- **AI Integration**: OpenAI GPT for Socratic questioning
-- **State Management**: React Context
-- **API Design**: RESTful endpoints
-
-## 🏗️ Architecture
-
-```
-harv/
-├── frontend/              # React application
-│   ├── src/
-│   │   ├── pages/         # Landing, Dashboard, Module pages
-│   │   ├── components/    # Reusable UI components
-│   │   ├── services/      # API integration
-│   │   └── context/       # Authentication state
-├── backend/               # Python FastAPI backend
-│   └── app/               # Your existing backend code
-├── start_backend.sh       # Backend startup script
-├── start_complete_platform.sh  # Complete platform launcher
-└── README.md             # This file
+```bash
+# From the harv root directory
+bash scripts/start.sh
 ```
 
-## 🌐 URLs
+This starts:
+- Backend API on http://localhost:8000
+- Frontend on http://localhost:5173
+- Developer GUI on http://localhost:3001
 
-- **Frontend**: http://localhost:5173
-- **Backend**: http://127.0.0.1:8000  
-- **API Docs**: http://127.0.0.1:8000/docs
+### 4. Access the Platform
 
-## ⚙️ Configuration
+Open your browser and go to: **http://localhost:5173**
 
-### Backend Setup
-1. Add your OpenAI API key to `backend/.env`:
-   ```
-   OPENAI_API_KEY=sk-your-actual-api-key
+## 📖 Detailed Setup Instructions
+
+### Backend Setup (FastAPI + SQLite)
+
+1. **Navigate to backend directory**:
+   ```bash
+   cd backend
    ```
 
-2. Your backend should have these endpoints:
-   - `GET /health` - Health check
-   - `GET /modules` - List all modules
-   - `POST /auth/register` - User registration
-   - `POST /auth/login` - User authentication
-   - `POST /chat/` - AI conversation
+2. **Create virtual environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-### Frontend Configuration
-The frontend automatically connects to your backend. Environment variables in `frontend/.env`:
+3. **Install dependencies**:
+   ```bash
+   pip install fastapi uvicorn sqlalchemy python-jose bcrypt python-multipart openai python-dotenv
+   # OR
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   Create `.env` file in backend directory:
+   ```env
+   OPENAI_API_KEY=sk-proj-your-actual-api-key
+   JWT_SECRET_KEY=your-secret-key-min-32-chars
+   DATABASE_URL=sqlite:///./harv.db
+   ```
+
+5. **Start backend server**:
+   ```bash
+   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+### Frontend Setup (React + Vite)
+
+1. **Navigate to frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+3. **Configure API endpoint** (optional):
+   Edit `frontend/.env`:
+   ```env
+   VITE_API_URL=http://localhost:8000
+   ```
+
+4. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+## 👤 Using HARV Platform
+
+### 1. Create an Account
+
+1. Go to http://localhost:5173
+2. Click "Get Started" or "Sign Up"
+3. Fill in:
+   - **Email**: Your email address
+   - **Password**: Minimum 6 characters
+   - **Name**: Your full name
+   - **Learning Goals**: What you hope to learn
+   - **Background**: Your experience level
+
+### 2. Login
+
+Use your registered email and password to login.
+
+### 3. Select a Module
+
+Choose from 15 communication modules:
+- Module 1: Your Four Worlds
+- Module 2: Media Uses & Effects
+- Module 3: Shared Characteristics of Media
+- Module 4: Communication Infrastructure
+- Module 5: Books: The Birth of Mass Communication
+- Module 6: News & Newspapers
+- Module 7: Magazines: The Special Interest Medium
+- Module 8: Comic Books: Small Business, Big Impact
+- Module 9: Photography: Fixing a Shadow
+- Module 10: Recordings: From Bach to Rock & Rap
+- Module 11: Motion Pictures: The Start of Mass Entertainment
+- Module 12: Radio: The Pervasive Medium
+- Module 13: Television: The Center of Attention
+- Module 14: Video Games: The Newest Mass Medium
+- Module 15: Economic Influencers: Advertising, PR, and Ownership
+
+### 4. Start Learning with Socratic AI
+
+1. Click on any module to start
+2. Ask questions about the topic
+3. HARV will respond with guiding questions
+4. Think through the questions and respond
+5. Continue the dialogue to deepen understanding
+
+**Example Conversation**:
 ```
-VITE_API_URL=http://127.0.0.1:8000
+You: "What is mass communication?"
+
+HARV: "Great question! To really understand mass communication, 
+consider this: What features distinguish mass communication from 
+other forms of communication? And why do you think these 
+attributes are crucial to its definition?"
+
+You: "Well, it reaches many people at once..."
+
+HARV: "Indeed! Let's delve deeper - why do you think it's 
+potentially advantageous for information to reach many people 
+at once? And how might the lack of personalization impact 
+the interpretation?"
 ```
 
-## 🧪 Testing Your Platform
+### 5. Export Your Learning
 
-1. **Start platform**: `bash start_complete_platform.sh`
-2. **Visit frontend**: http://localhost:5173
-3. **Create account**: Register with email/password
-4. **Browse modules**: See your 15 communication modules
-5. **Start chatting**: Click any module to chat with Harv
-6. **Test Socratic method**: Ask questions and explore concepts
-7. **Export conversations**: Download your learning sessions
+Click "Export Conversation" to download your chat history for:
+- Study notes
+- Assignment submission
+- Personal review
 
-## 🔧 Troubleshooting
+## 💻 Using HARV CLI
+
+The CLI provides direct access to HARV's functionality:
+
+```bash
+# Start the CLI
+python harv_cli.py
+
+# Main Menu Options:
+1. 🎓 New Student Profile - Create a new learning profile
+2. 👤 Existing Student - Continue with existing profile
+3. 🌐 Connect to Backend - Use with running backend
+4. 📖 Getting Started - View help
+5. 🚪 Exit
+```
+
+### CLI Features:
+- **Offline Mode**: Works without backend server
+- **Module Selection**: Access all 15 modules
+- **Conversation History**: Saves all dialogues
+- **Progress Tracking**: Monitor completion
+- **Export Options**: JSON, TXT, or MD formats
+
+## 🔧 API Endpoints
+
+### Authentication
+- `POST /auth/register` - Create new account
+- `POST /auth/login` - User login
+- `GET /auth/me` - Get current user
+- `POST /auth/logout` - Logout
+
+### Modules
+- `GET /modules` - List all modules
+- `GET /modules/{id}` - Get specific module
+- `GET /modules/{id}/config` - Get module configuration
+
+### Chat
+- `POST /chat/` - Send message (basic)
+- `POST /chat/enhanced` - Send message (with memory)
+- `GET /memory/{user_id}/{module_id}` - Get memory context
+
+### Health
+- `GET /health` - System health check
+- `GET /` - API information
+
+## 📊 Testing the System
+
+### 1. Test Backend Health
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "enhanced_memory": true,
+  "openai_configured": true
+}
+```
+
+### 2. Test User Registration
+```bash
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123",
+    "name": "Test User"
+  }'
+```
+
+### 3. Test Chat Functionality
+```bash
+# First login to get token
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}' \
+  | jq -r '.access_token')
+
+# Send chat message
+curl -X POST http://localhost:8000/chat/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "What is communication theory?",
+    "module_id": 1,
+    "user_id": 1
+  }'
+```
+
+## 🐛 Troubleshooting
 
 ### Backend Issues
+
+**Problem**: "Address already in use"
 ```bash
-# Check if backend is running
-curl http://127.0.0.1:8000/health
+# Kill process on port 8000
+lsof -ti:8000 | xargs kill -9
+```
 
-# View backend logs
-bash start_backend.sh
+**Problem**: "OpenAI API error"
+- Check your API key in `backend/.env`
+- Ensure you have GPT-4 access
+- Check OpenAI API status
 
-# Install missing dependencies
+**Problem**: "Database error"
+```bash
+# Reset database
 cd backend
-source venv/bin/activate  # or .venv/bin/activate
-pip install fastapi uvicorn sqlalchemy python-jose bcrypt python-multipart openai
+rm harv.db
+python -c "from app.main import Base, engine; Base.metadata.create_all(bind=engine)"
 ```
 
 ### Frontend Issues
-```bash
-# Reinstall dependencies
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
 
-# Check if frontend is accessible
-curl http://localhost:5173
+**Problem**: "npm install fails"
+```bash
+# Use legacy peer deps
+npm install --legacy-peer-deps
 ```
 
-### Common Fixes
-- **CORS errors**: Backend CORS is configured for localhost:5173
-- **API connection**: Make sure backend is running first
-- **OpenAI errors**: Add valid API key to backend/.env
-- **Module loading**: Backend must return array of modules
+**Problem**: "Vite not found"
+```bash
+# Install vite explicitly
+npm install vite --save-dev
+```
+
+**Problem**: "CORS errors"
+- Ensure backend is running on port 8000
+- Check frontend is using correct API URL
+
+## 🔒 Security Considerations
+
+1. **API Keys**: Never commit `.env` files
+2. **JWT Tokens**: Expire after 24 hours
+3. **Passwords**: Bcrypt hashed in database
+4. **CORS**: Configured for localhost only
+5. **SQL Injection**: Protected by SQLAlchemy ORM
 
 ## 📁 Project Structure
 
-### Frontend (`frontend/`)
 ```
-src/
-├── pages/
-│   ├── LandingPage.jsx    # Authentication & hero
-│   ├── Dashboard.jsx      # Module selection
-│   └── ModulePage.jsx     # Chat interface
-├── components/
-│   ├── layout/Header.jsx  # Navigation header
-│   └── auth/ProtectedRoute.jsx  # Route protection
-├── services/api.js        # Backend integration
-├── context/AuthContext.jsx  # Authentication state
-└── index.css             # Global styles
-```
-
-### Backend Integration
-The frontend expects these API responses:
-
-**Authentication**:
-```json
-{
-  "access_token": "jwt-token",
-  "token_type": "bearer",
-  "user": { "email": "user@example.com" }
-}
-```
-
-**Modules**:
-```json
-[
-  {
-    "id": 1,
-    "title": "Communication Theory",
-    "description": "Explore fundamental concepts..."
-  }
-]
+harv/
+├── backend/
+│   ├── app/
+│   │   ├── main.py           # FastAPI application
+│   │   ├── models.py         # Database models
+│   │   ├── auth.py           # Authentication logic
+│   │   ├── database.py       # Database connection
+│   │   └── endpoints/        # API endpoints
+│   ├── harv.db              # SQLite database
+│   └── requirements.txt     # Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── pages/           # React pages
+│   │   ├── components/      # UI components
+│   │   ├── services/        # API calls
+│   │   └── context/         # State management
+│   ├── package.json         # Node dependencies
+│   └── vite.config.js       # Vite configuration
+├── scripts/
+│   ├── start.sh            # Start all services
+│   └── setup.sh            # Initial setup
+├── harv_cli.py             # Command-line interface
+└── README.md               # This file
 ```
 
-**Chat**:
-```json
-{
-  "reply": "That's interesting! What led you to think about it that way?",
-  "conversation_id": "uuid",
-  "module_id": 1
-}
-```
+## 🚀 Production Deployment
 
-## 🎓 Socratic Learning Flow
-
-1. **Student asks question** → System processes with memory context
-2. **AI responds with question** → Guides discovery vs giving answers  
-3. **Conversation builds** → Memory system tracks learning progression
-4. **Export available** → Students can download for review
-
-## 🚢 Production Deployment
-
-### Environment Variables
+### 1. Environment Variables
 ```bash
-# Backend (.env)
-OPENAI_API_KEY=sk-your-actual-key
-JWT_SECRET_KEY=super-secret-production-key
-DATABASE_URL=postgresql://user:pass@host:port/db
-
-# Frontend (.env)
-VITE_API_URL=https://your-backend-domain.com
+# Production .env
+OPENAI_API_KEY=sk-prod-key
+JWT_SECRET_KEY=production-secret-min-32-chars
+DATABASE_URL=postgresql://user:pass@host/db
 ```
 
-### Build Commands
+### 2. Build Frontend
 ```bash
-# Frontend production build
 cd frontend
 npm run build
-
-# Backend production
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Deploy dist/ folder to CDN or static host
 ```
 
-## 📊 Features Implemented
+### 3. Deploy Backend
+```bash
+# Using Docker
+docker build -t harv-backend ./backend
+docker run -p 8000:8000 harv-backend
 
-✅ **Complete Authentication System**
-- Registration with validation
-- Login with JWT tokens
-- Protected routes
-- User context management
+# Using PM2
+pm2 start "uvicorn app.main:app" --name harv-backend
+```
 
-✅ **Module Management**
-- Dynamic module loading from backend
-- Module cards with descriptions
-- Click-to-start functionality
-- Loading states and error handling
+## 🤝 Contributing
 
-✅ **AI Chat Interface**  
-- Real-time messaging
-- Socratic question responses
-- Message history
-- Typing indicators
-- Export functionality
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push branch (`git push origin feature/amazing`)
+5. Open Pull Request
 
-✅ **Professional UI/UX**
-- Responsive design (mobile-first)
-- Tailwind CSS styling
-- Loading spinners
-- Error states
-- Smooth animations
+## 📝 License
 
-✅ **Backend Integration**
-- RESTful API communication
-- Error handling with fallbacks
-- Health checking
-- Memory system integration
+This project is licensed under the MIT License.
 
-## 🛠️ Built With
+## 🆘 Support
 
-- **React 18** - Modern UI framework
-- **Vite** - Fast build tool
-- **Tailwind CSS** - Utility-first styling
-- **React Router** - Client-side routing
-- **Lucide React** - Beautiful icons
-- **FastAPI** - Python backend framework
-- **OpenAI API** - AI conversation engine
-
-## 📈 Next Steps
-
-After getting the platform running:
-
-1. **Customize modules** - Add your specific course content
-2. **Enhance memory system** - Fine-tune learning context
-3. **Add analytics** - Track student progress
-4. **Deploy to production** - Host on cloud platform
-5. **Scale for more users** - Optimize for larger cohorts
+- **Documentation**: See `/docs` folder
+- **Issues**: GitHub Issues
+- **Email**: support@harv-education.com
 
 ---
 
-**Built for the Harv Platform - AI-Powered Socratic Learning** 🌱
+**Happy Learning with HARV!** 🌱📚
 
-For support, check that your backend endpoints match the expected API format above.
+*Remember: The best learning happens through discovery, not memorization.*

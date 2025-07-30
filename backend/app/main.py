@@ -109,7 +109,7 @@ app.include_router(modules_router, prefix="", tags=["modules"])
 app.include_router(chat_router, prefix="", tags=["chat"])  # No prefix so /chat/ works
 app.include_router(memory_router, prefix="", tags=["memory"])
 app.include_router(conversations_router, prefix="/conversations", tags=["conversations"])
-app.include_router(auth_router, prefix="", tags=["auth"])
+# app.include_router(auth_router, prefix="", tags=["auth"])  # Temporarily disabled to use inline auth
 
 # Create tables on startup
 @app.on_event("startup")
