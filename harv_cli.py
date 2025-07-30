@@ -9,8 +9,14 @@ import sqlite3
 import sys
 import json
 import shutil
-from datetime import datetime
+import hashlib
+import secrets
+import re
+import base64
+import hmac
+from datetime import datetime, timedelta
 from openai import OpenAI
+from typing import Dict, List, Optional, Any
 
 # Platform-specific imports for keyboard handling
 try:
@@ -19,6 +25,283 @@ try:
     HAS_TERMIOS = True
 except ImportError:
     HAS_TERMIOS = False
+
+# JWT implementation without external dependencies
+class JWTHandler:
+    """Simple JWT implementation for CLI authentication"""
+    
+    @staticmethod  
+    def base64url_encode(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    
+    @staticmethod
+    def base64url_decode(data: str) -> bytes:
+        # Add padding if necessary
+        padding = 4 - (len(data) % 4)
+        if padding != 4:
+            data += '=' * padding
+        return base64.urlsafe_b64decode(data)
+    
+    @staticmethod
+    def create_token(payload: Dict[str, Any], secret: str, expires_hours: int = 24) -> str:
+        """Create a JWT token with expiration"""
+        header = {"alg": "HS256", "typ": "JWT"}
+        
+        # Add timestamps
+        now = datetime.utcnow()
+        payload.update({
+            "iat": int(now.timestamp()),  # issued at
+            "exp": int((now + timedelta(hours=expires_hours)).timestamp()),  # expires
+            "jti": secrets.token_hex(16)  # JWT ID for uniqueness
+        })
+        
+        # Encode header and payload
+        header_encoded = JWTHandler.base64url_encode(json.dumps(header).encode())
+        payload_encoded = JWTHandler.base64url_encode(json.dumps(payload).encode())
+        
+        # Create signature
+        message = f"{header_encoded}.{payload_encoded}"
+        signature = hmac.new(
+            secret.encode(), 
+            message.encode(), 
+            hashlib.sha256
+        ).digest()
+        signature_encoded = JWTHandler.base64url_encode(signature)
+        
+        return f"{message}.{signature_encoded}"
+    
+    @staticmethod
+    def verify_token(token: str, secret: str) -> Optional[Dict[str, Any]]:
+        """Verify and decode JWT token"""
+        try:
+            header_encoded, payload_encoded, signature_encoded = token.split('.')
+            
+            # Verify signature
+            message = f"{header_encoded}.{payload_encoded}"
+            expected_signature = hmac.new(
+                secret.encode(),
+                message.encode(),
+                hashlib.sha256
+            ).digest()
+            
+            received_signature = JWTHandler.base64url_decode(signature_encoded)
+            
+            if not hmac.compare_digest(expected_signature, received_signature):
+                return None
+            
+            # Decode payload
+            payload = json.loads(JWTHandler.base64url_decode(payload_encoded))
+            
+            # Check expiration
+            if 'exp' in payload:
+                if datetime.utcnow().timestamp() > payload['exp']:
+                    return None
+            
+            return payload
+            
+        except Exception:
+            return None
+
+# Enhanced Security Module
+class SecurityManager:
+    """Handles authentication, password validation, and secure storage"""
+    
+    def __init__(self):
+        self.secret_key = self._get_or_create_secret()
+        self.failed_attempts = {}
+        self.max_attempts = 3
+        self.lockout_time = 300  # 5 minutes
+    
+    def _get_or_create_secret(self) -> str:
+        """Get or create application secret key"""
+        secret_path = os.path.expanduser("~/.harv_secret")
+        if os.path.exists(secret_path):
+            with open(secret_path, 'r') as f:
+                return f.read().strip()
+        else:
+            secret = secrets.token_hex(32)
+            with open(secret_path, 'w') as f:
+                f.write(secret)
+            os.chmod(secret_path, 0o600)  # Read/write for owner only
+            return secret
+    
+    def hash_password(self, password: str) -> str:
+        """Hash password with salt"""
+        salt = secrets.token_bytes(32)
+        password_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+        return base64.b64encode(salt + password_hash).decode()
+    
+    def verify_password(self, password: str, password_hash: str) -> bool:
+        """Verify password against hash"""
+        try:
+            decoded = base64.b64decode(password_hash)
+            salt = decoded[:32]
+            stored_hash = decoded[32:]
+            new_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+            return hmac.compare_digest(stored_hash, new_hash)
+        except Exception:
+            return False
+    
+    def validate_password_strength(self, password: str) -> tuple[bool, str]:
+        """Validate password meets security requirements"""
+        if len(password) < 8:
+            return False, "Password must be at least 8 characters long"
+        
+        if len(password) > 128:
+            return False, "Password must be less than 128 characters"
+        
+        if not re.search(r'[A-Z]', password):
+            return False, "Password must contain at least one uppercase letter"
+        
+        if not re.search(r'[a-z]', password):
+            return False, "Password must contain at least one lowercase letter"
+        
+        if not re.search(r'\d', password):
+            return False, "Password must contain at least one number"
+        
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            return False, "Password must contain at least one special character"
+        
+        # Check for common patterns
+        common_patterns = ['123', 'abc', 'password', 'qwerty', '111', '000']
+        for pattern in common_patterns:
+            if pattern in password.lower():
+                return False, f"Password cannot contain common pattern: {pattern}"
+        
+        return True, "Password meets security requirements"
+    
+    def create_session_token(self, student_name: str) -> str:
+        """Create session token for authenticated student"""
+        payload = {
+            "student": student_name,
+            "type": "session"
+        }
+        return JWTHandler.create_token(payload, self.secret_key, expires_hours=24)
+    
+    def verify_session_token(self, token: str) -> Optional[str]:
+        """Verify session token and return student name"""
+        payload = JWTHandler.verify_token(token, self.secret_key)
+        if payload and payload.get("type") == "session":
+            return payload.get("student")
+        return None
+    
+    def is_locked_out(self, identifier: str) -> bool:
+        """Check if identifier is locked out due to failed attempts"""
+        if identifier in self.failed_attempts:
+            attempts, last_attempt = self.failed_attempts[identifier]
+            if attempts >= self.max_attempts:
+                if datetime.now().timestamp() - last_attempt < self.lockout_time:
+                    return True
+                else:
+                    # Reset after lockout period
+                    del self.failed_attempts[identifier]
+        return False
+    
+    def record_failed_attempt(self, identifier: str):
+        """Record a failed login attempt"""
+        now = datetime.now().timestamp()
+        if identifier in self.failed_attempts:
+            attempts, _ = self.failed_attempts[identifier]
+            self.failed_attempts[identifier] = (attempts + 1, now)
+        else:
+            self.failed_attempts[identifier] = (1, now)
+    
+    def clear_failed_attempts(self, identifier: str):
+        """Clear failed attempts after successful login"""
+        if identifier in self.failed_attempts:
+            del self.failed_attempts[identifier]
+
+# Enhanced Memory System Integration
+class EnhancedMemorySystem:
+    """Advanced memory management with learning pattern analysis"""
+    
+    def __init__(self, student_name: str):
+        self.student_name = student_name
+        self.db_path = f"students/{student_name}/{student_name}_harv.sqlite"
+        
+    def analyze_learning_patterns(self) -> Dict[str, Any]:
+        """Analyze student learning patterns from conversation history"""
+        if not os.path.exists(self.db_path):
+            return {}
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Analyze conversation patterns
+        cursor.execute("""
+            SELECT module_id, COUNT(*) as interactions,
+                   AVG(LENGTH(content)) as avg_response_length,
+                   COUNT(CASE WHEN message_type = 'user' THEN 1 END) as questions_asked
+            FROM conversations 
+            GROUP BY module_id
+        """)
+        
+        module_patterns = {}
+        for row in cursor.fetchall():
+            module_id, interactions, avg_length, questions = row
+            module_patterns[module_id] = {
+                'engagement_level': min(interactions / 10.0, 1.0),  # Normalize to 0-1
+                'depth_of_responses': min(avg_length / 100.0, 1.0),  # Normalize
+                'curiosity_level': min(questions / 5.0, 1.0)  # Normalize
+            }
+        
+        # Analyze learning progression
+        cursor.execute("""
+            SELECT DATE(timestamp) as date, COUNT(*) as daily_interactions
+            FROM conversations 
+            WHERE message_type = 'user'
+            GROUP BY DATE(timestamp)
+            ORDER BY date DESC
+            LIMIT 30
+        """)
+        
+        daily_engagement = cursor.fetchall()
+        conn.close()
+        
+        return {
+            'module_patterns': module_patterns,
+            'daily_engagement': daily_engagement,
+            'total_modules_engaged': len(module_patterns),
+            'avg_engagement': sum(p['engagement_level'] for p in module_patterns.values()) / max(len(module_patterns), 1)
+        }
+    
+    def get_adaptive_context(self, module_id: int) -> str:
+        """Generate adaptive context based on learning patterns"""
+        patterns = self.analyze_learning_patterns()
+        
+        if module_id in patterns.get('module_patterns', {}):
+            module_pattern = patterns['module_patterns'][module_id]
+            
+            # Adjust teaching approach based on patterns
+            if module_pattern['engagement_level'] < 0.3:
+                return "The student shows low engagement. Use more interactive questions and real-world examples."
+            elif module_pattern['curiosity_level'] > 0.7:
+                return "The student is highly curious. Provide deeper explanations and encourage exploration."
+            elif module_pattern['depth_of_responses'] < 0.3:
+                return "The student gives brief responses. Use prompts that encourage elaboration."
+        
+        return "Maintain standard Socratic questioning approach."
+    
+    def save_learning_insight(self, module_id: int, insight: str):
+        """Save learning insights for future reference"""
+        if not os.path.exists(self.db_path):
+            return
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO learning_insights 
+            (module_id, insight_text, created_at)
+            VALUES (?, ?, ?)
+        """, (module_id, insight, datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+
+# Global instances
+security_manager = SecurityManager()
+enhanced_memory = None
 
 # Terminal colors for retro aesthetic
 class Colors:
@@ -60,17 +343,79 @@ class Session:
         self.api_key_set = False
         self.menu_stack = []
         self.backend_url = "http://localhost:8000"
+        self.session_token = None
+        self.is_authenticated = False
+        self.last_activity = datetime.now()
+        self.session_timeout = 3600  # 1 hour
     
-    def set_student(self, student_name):
-        if self.db_conn:
-            self.db_conn.close()
+    def authenticate_student(self, student_name: str, password: str) -> bool:
+        """Authenticate student with password"""
+        if security_manager.is_locked_out(student_name):
+            return False
         
         db_path = f"students/{student_name}/{student_name}_harv.sqlite"
-        if os.path.exists(db_path):
-            self.current_student = student_name
-            self.db_conn = sqlite3.connect(db_path)
+        if not os.path.exists(db_path):
+            security_manager.record_failed_attempt(student_name)
+            return False
+        
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute("SELECT password_hash FROM student_auth WHERE student_name = ?", (student_name,))
+            result = cursor.fetchone()
+            
+            if result and security_manager.verify_password(password, result[0]):
+                self.current_student = student_name
+                self.db_conn = conn
+                self.is_authenticated = True
+                self.session_token = security_manager.create_session_token(student_name)
+                self.last_activity = datetime.now()
+                security_manager.clear_failed_attempts(student_name)
+                
+                global enhanced_memory
+                enhanced_memory = EnhancedMemorySystem(student_name)
+                return True
+            else:
+                security_manager.record_failed_attempt(student_name)
+                conn.close()
+                return False
+                
+        except sqlite3.Error:
+            conn.close()
+            security_manager.record_failed_attempt(student_name)
+            return False
+    
+    def set_student(self, student_name):
+        """Legacy method - now requires authentication"""
+        if not self.is_authenticated or self.current_student != student_name:
+            return False
+        return True
+    
+    def check_session_timeout(self) -> bool:
+        """Check if session has timed out"""
+        if not self.is_authenticated:
             return True
+        
+        if (datetime.now() - self.last_activity).seconds > self.session_timeout:
+            self.logout()
+            return True
+        
         return False
+    
+    def refresh_activity(self):
+        """Update last activity timestamp"""
+        if self.is_authenticated:
+            self.last_activity = datetime.now()
+    
+    def logout(self):
+        """Logout current student"""
+        self.current_student = None
+        self.is_authenticated = False
+        self.session_token = None
+        if self.db_conn:
+            self.db_conn.close()
+            self.db_conn = None
     
     def close(self):
         if self.db_conn:
@@ -100,31 +445,69 @@ def print_status():
     print_separator("─")
 
 def setup_api_key():
-    """Setup OpenAI API key"""
+    """Enhanced secure API key setup"""
     global client, session
     
-    print(f"\n{Colors.YELLOW}🔑 OPENAI API KEY SETUP{Colors.END}")
+    print(f"\n{Colors.YELLOW}🔑 SECURE API KEY SETUP{Colors.END}")
     print_separator()
     
+    # Check environment first
     current_key = os.getenv('OPENAI_API_KEY')
     if current_key:
         print(f"{Colors.GREEN}✓ API key found in environment{Colors.END}")
         try:
             client = OpenAI(api_key=current_key)
+            # Test the key with a simple request
+            client.models.list()
             session.api_key_set = True
             return True
         except Exception as e:
-            print(f"{Colors.RED}❌ Invalid API key: {e}{Colors.END}")
+            print(f"{Colors.RED}❌ Invalid environment API key: {e}{Colors.END}")
+    
+    # Check secure storage
+    secure_key_path = os.path.expanduser("~/.harv_api_key")
+    if os.path.exists(secure_key_path):
+        try:
+            with open(secure_key_path, 'r') as f:
+                stored_key = f.read().strip()
+                if stored_key:
+                    client = OpenAI(api_key=stored_key)
+                    client.models.list()  # Test the key
+                    session.api_key_set = True
+                    print(f"{Colors.GREEN}✓ API key loaded from secure storage{Colors.END}")
+                    return True
+        except Exception as e:
+            print(f"{Colors.RED}❌ Stored API key invalid: {e}{Colors.END}")
+            os.remove(secure_key_path)  # Remove invalid key
     
     print(f"{Colors.CYAN}Enter your OpenAI API key:{Colors.END}")
-    api_key = input(f"{Colors.BOLD}> {Colors.END}").strip()
+    print(f"{Colors.YELLOW}⚠️  Key will be securely stored locally{Colors.END}")
+    
+    try:
+        import getpass
+        api_key = getpass.getpass(f"{Colors.BOLD}🔑 API Key: {Colors.END}")
+    except (ImportError, OSError):
+        api_key = input(f"{Colors.BOLD}🔑 API Key: {Colors.END}").strip()
     
     if api_key:
+        # Validate API key format
+        if not api_key.startswith('sk-') or len(api_key) < 20:
+            print(f"{Colors.RED}❌ Invalid API key format{Colors.END}")
+            return False
+        
         try:
             client = OpenAI(api_key=api_key)
+            # Test the key
+            client.models.list()
+            
+            # Store securely
+            with open(secure_key_path, 'w') as f:
+                f.write(api_key)
+            os.chmod(secure_key_path, 0o600)  # Read/write for owner only
+            
             os.environ['OPENAI_API_KEY'] = api_key
             session.api_key_set = True
-            print(f"{Colors.GREEN}✓ API key configured successfully!{Colors.END}")
+            print(f"{Colors.GREEN}✓ API key configured and securely stored!{Colors.END}")
             return True
         except Exception as e:
             print(f"{Colors.RED}❌ Invalid API key: {e}{Colors.END}")
@@ -204,17 +587,63 @@ def create_student_profile():
     goals = input(f"{Colors.BOLD}Learning goals: {Colors.END}").strip()
     background = input(f"{Colors.BOLD}Relevant background: {Colors.END}").strip()
     
+    # Set up password with validation
+    print(f"\n{Colors.YELLOW}🔐 Security Setup{Colors.END}")
+    print_separator("─", 40)
+    print(f"{Colors.CYAN}Password Requirements:{Colors.END}")
+    print("  • At least 8 characters long")
+    print("  • Contains uppercase and lowercase letters")
+    print("  • Contains at least one number")
+    print("  • Contains at least one special character (!@#$%^&*(),.?\":{}|<>)")
+    print("  • Cannot contain common patterns (123, abc, password, etc.)")
+    print()
+    
+    while True:
+        try:
+            import getpass
+            password = getpass.getpass(f"{Colors.BOLD}🔑 Enter password: {Colors.END}")
+        except (ImportError, OSError):
+            # Fallback for systems without getpass
+            password = input(f"{Colors.BOLD}🔑 Enter password: {Colors.END}")
+        
+        if not password:
+            print(f"{Colors.RED}❌ Password cannot be empty!{Colors.END}")
+            continue
+        
+        valid, message = security_manager.validate_password_strength(password)
+        if not valid:
+            print(f"{Colors.RED}❌ {message}{Colors.END}")
+            continue
+        
+        try:
+            password_confirm = getpass.getpass(f"{Colors.BOLD}🔑 Confirm password: {Colors.END}")
+        except (ImportError, OSError):
+            password_confirm = input(f"{Colors.BOLD}🔑 Confirm password: {Colors.END}")
+        
+        if password != password_confirm:
+            print(f"{Colors.RED}❌ Passwords do not match!{Colors.END}")
+            continue
+        
+        print(f"{Colors.GREEN}✅ {message}{Colors.END}")
+        break
+    
+    # Hash the password
+    password_hash = security_manager.hash_password(password)
+    
     # Create student profile
-    if create_student_database(student_name, email, reason, familiarity, learning_style, goals, background):
-        session.set_student(student_name)
-        print(f"\n{Colors.GREEN}🎉 Student profile '{student_name}' created and loaded!{Colors.END}")
-        input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
-        return True
+    if create_student_database(student_name, email, reason, familiarity, learning_style, goals, background, password_hash):
+        # Authenticate the new student
+        if session.authenticate_student(student_name, password):
+            print(f"\n{Colors.GREEN}🎉 Student profile '{student_name}' created and authenticated!{Colors.END}")
+            input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
+            return True
+        else:
+            print(f"\n{Colors.RED}❌ Profile created but authentication failed!{Colors.END}")
     
     return False
 
-def create_student_database(student_name, email, reason, familiarity, learning_style, goals, background):
-    """Create student database with all tables"""
+def create_student_database(student_name, email, reason, familiarity, learning_style, goals, background, password_hash):
+    """Create student database with all tables including authentication"""
     students_dir = "students"
     if not os.path.exists(students_dir):
         os.makedirs(students_dir)
@@ -230,6 +659,15 @@ def create_student_database(student_name, email, reason, familiarity, learning_s
     
     # Create all tables
     tables = [
+        """CREATE TABLE student_auth (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_name TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP,
+            failed_attempts INTEGER DEFAULT 0,
+            locked_until TIMESTAMP
+        )""",
         """CREATE TABLE conversations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             module_id INTEGER NOT NULL,
@@ -268,6 +706,12 @@ def create_student_database(student_name, email, reason, familiarity, learning_s
             discovered_at TEXT DEFAULT (datetime('now')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""",
+        """CREATE TABLE learning_insights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            module_id INTEGER NOT NULL,
+            insight_text TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""",
         """CREATE TABLE exported_conversations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             module_id INTEGER,
@@ -289,6 +733,12 @@ def create_student_database(student_name, email, reason, familiarity, learning_s
     for table_sql in tables:
         cursor.execute(table_sql)
     
+    # Insert authentication record
+    cursor.execute("""
+        INSERT INTO student_auth (student_name, password_hash) 
+        VALUES (?, ?)
+    """, (student_name, password_hash))
+    
     # Insert metadata
     cursor.execute("""
         INSERT INTO student_metadata (key, value) VALUES 
@@ -307,8 +757,8 @@ def create_student_database(student_name, email, reason, familiarity, learning_s
     return True
 
 def select_student():
-    """Select an existing student profile"""
-    print(f"\n{Colors.YELLOW}👤 SELECT STUDENT PROFILE{Colors.END}")
+    """Select and authenticate an existing student profile"""
+    print(f"\n{Colors.YELLOW}👤 STUDENT LOGIN{Colors.END}")
     print_separator()
     
     students = list_students()
@@ -333,12 +783,31 @@ def select_student():
             student_idx = int(choice) - 1
             if 0 <= student_idx < len(students):
                 student_name = students[student_idx][0]
-                if session.set_student(student_name):
-                    print(f"\n{Colors.GREEN}✓ Student '{student_name}' loaded!{Colors.END}")
+                
+                # Check if student is locked out
+                if security_manager.is_locked_out(student_name):
+                    print(f"{Colors.RED}🔒 Account locked due to failed attempts. Try again in 5 minutes.{Colors.END}")
+                    input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
+                    return False
+                
+                # Get password
+                print(f"\n{Colors.CYAN}🔐 Authentication Required{Colors.END}")
+                try:
+                    import getpass
+                    password = getpass.getpass(f"{Colors.BOLD}🔑 Enter password for {student_name}: {Colors.END}")
+                except (ImportError, OSError):
+                    password = input(f"{Colors.BOLD}🔑 Enter password for {student_name}: {Colors.END}")
+                
+                if session.authenticate_student(student_name, password):
+                    print(f"\n{Colors.GREEN}✅ Welcome back, {student_name}!{Colors.END}")
                     input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
                     return True
                 else:
-                    print(f"{Colors.RED}❌ Failed to load student profile{Colors.END}")
+                    if security_manager.is_locked_out(student_name):
+                        print(f"{Colors.RED}🔒 Too many failed attempts. Account locked for 5 minutes.{Colors.END}")
+                    else:
+                        remaining = security_manager.max_attempts - security_manager.failed_attempts.get(student_name, (0, 0))[0]
+                        print(f"{Colors.RED}❌ Invalid password. {remaining} attempts remaining.{Colors.END}")
             else:
                 print(f"{Colors.RED}❌ Invalid selection{Colors.END}")
         except ValueError:
@@ -350,40 +819,87 @@ def wait_for_key(prompt="Press any key to continue..."):
     input()
 
 def main_menu():
-    """Main navigation menu - HARV"""
+    """Enhanced main navigation menu with security features"""
     while True:
-        print_header()
-        
-        if not session.api_key_set:
-            print(f"\n{Colors.RED}⚠️  OpenAI API key required to continue{Colors.END}")
-            setup_api_key()
-            continue
-        
-        print(f"\n{Colors.BOLD}HARV CLI{Colors.END}")
-        print_separator()
-        
-        print(f"   {Colors.BOLD}1.{Colors.END} 🎓 New Student Profile")
-        print(f"   {Colors.BOLD}2.{Colors.END} 👤 Existing Student")
-        print(f"   {Colors.BOLD}3.{Colors.END} 🌐 Connect to Backend")
-        print(f"   {Colors.BOLD}4.{Colors.END} 📖 Getting Started")
-        print(f"   {Colors.BOLD}5.{Colors.END} 🚪 Exit")
-        
-        choice = input(f"\n{Colors.BOLD}Select option: {Colors.END}").strip()
-        
-        if choice == "1":
-            create_student_profile()
-            if session.current_student:
-                student_menu()
-        elif choice == "2":
-            if select_student():
-                student_menu()
-        elif choice == "3":
-            connect_backend()
-        elif choice == "4":
-            show_getting_started()
-        elif choice == "5":
-            print(f"\n{Colors.CYAN}👋 Thank you for using HARV!{Colors.END}")
+        try:
+            print_header()
+            
+            # Check for session timeout if user is logged in
+            if session.is_authenticated and session.check_session_timeout():
+                print(f"\n{Colors.YELLOW}⏰ Session expired for security. Please log in again.{Colors.END}")
+                input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
+                continue
+            
+            if not session.api_key_set:
+                print(f"\n{Colors.RED}⚠️  OpenAI API key required to continue{Colors.END}")
+                if not setup_api_key():
+                    print(f"{Colors.RED}❌ API key setup failed{Colors.END}")
+                continue
+            
+            print(f"\n{Colors.BOLD}HARV CLI - Enhanced Security Edition{Colors.END}")
+            print_separator()
+            
+            # Show current session status
+            if session.is_authenticated:
+                remaining_time = session.session_timeout - (datetime.now() - session.last_activity).seconds
+                print(f"{Colors.GREEN}🔒 Logged in as: {session.current_student} (Session: {remaining_time//60}m remaining){Colors.END}")
+                print()
+            
+            print(f"   {Colors.BOLD}1.{Colors.END} 🎓 New Student Profile")
+            print(f"   {Colors.BOLD}2.{Colors.END} 👤 Student Login")
+            if session.is_authenticated:
+                print(f"   {Colors.BOLD}3.{Colors.END} 🏠 Student Dashboard")
+                print(f"   {Colors.BOLD}4.{Colors.END} 🔓 Logout")
+                print(f"   {Colors.BOLD}5.{Colors.END} 🌐 Connect to Backend")
+                print(f"   {Colors.BOLD}6.{Colors.END} 📖 Getting Started")
+                print(f"   {Colors.BOLD}7.{Colors.END} 🚪 Exit")
+            else:
+                print(f"   {Colors.BOLD}3.{Colors.END} 🌐 Connect to Backend")
+                print(f"   {Colors.BOLD}4.{Colors.END} 📖 Getting Started")
+                print(f"   {Colors.BOLD}5.{Colors.END} 🚪 Exit")
+            
+            choice = input(f"\n{Colors.BOLD}Select option: {Colors.END}").strip()
+            
+            if choice == "1":
+                if create_student_profile():
+                    student_menu()
+            elif choice == "2":
+                if select_student():
+                    student_menu()
+            elif choice == "3":
+                if session.is_authenticated:
+                    student_menu()
+                else:
+                    connect_backend()
+            elif choice == "4":
+                if session.is_authenticated:
+                    session.logout()
+                    print(f"{Colors.GREEN}✅ Successfully logged out{Colors.END}")
+                    input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
+                else:
+                    show_getting_started()
+            elif choice == "5":
+                if session.is_authenticated:
+                    connect_backend()
+                else:
+                    break
+            elif choice == "6" and session.is_authenticated:
+                show_getting_started()
+            elif choice == "7" and session.is_authenticated:
+                break
+            elif choice == "5" and not session.is_authenticated:
+                break
+            else:
+                print(f"{Colors.RED}❌ Invalid option{Colors.END}")
+                
+        except KeyboardInterrupt:
+            print(f"\n\n{Colors.CYAN}👋 Thank you for using HARV!{Colors.END}")
             print(f"{Colors.YELLOW}   Happy learning! 🎓✨{Colors.END}\n")
+            break
+            
+        except Exception as e:
+            print(f"{Colors.RED}❌ Unexpected error: {e}{Colors.END}")
+            input(f"{Colors.CYAN}Press Enter to continue...{Colors.END}")
             session.close()
             sys.exit(0)
 
@@ -492,7 +1008,14 @@ def get_module_progress(module_id):
     return {"started": False, "completed": False, "questions_asked": 0}
 
 def start_module_conversation(module_id, module_info):
-    """Start or continue a Socratic conversation for a module"""
+    """Start or continue a Socratic conversation for a module with enhanced security"""
+    # Check session timeout
+    if session.check_session_timeout():
+        print(f"{Colors.RED}🔒 Session expired. Please log in again.{Colors.END}")
+        return
+    
+    session.refresh_activity()
+    
     print_header()
     print(f"\n{Colors.BOLD}📖 MODULE {module_id}: {module_info['title'].upper()}{Colors.END}")
     print_separator()
@@ -501,19 +1024,28 @@ def start_module_conversation(module_id, module_info):
     print()
     
     # Check if module already started
-    progress = get_module_progress(module_id)
-    if progress["started"]:
-        print(f"{Colors.YELLOW}📚 Continuing your exploration of {module_info['title']}...{Colors.END}")
-        print(f"{Colors.CYAN}Questions asked so far: {progress['questions_asked']}{Colors.END}")
-    else:
-        print(f"{Colors.GREEN}🎯 Starting your Socratic journey with {module_info['title']}...{Colors.END}")
-        # Mark as started
-        cursor = session.db_conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO module_progress (module_id, started_at, questions_asked)
-            VALUES (?, ?, 0)
-        """, (module_id, datetime.now().isoformat()))
-        session.db_conn.commit()
+    try:
+        progress = get_module_progress(module_id)
+        if progress["started"]:
+            print(f"{Colors.YELLOW}📚 Continuing your exploration of {module_info['title']}...{Colors.END}")
+            print(f"{Colors.CYAN}Questions asked so far: {progress['questions_asked']}{Colors.END}")
+        else:
+            print(f"{Colors.GREEN}🎯 Starting your Socratic journey with {module_info['title']}...{Colors.END}")
+            # Mark as started
+            cursor = session.db_conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO module_progress (module_id, started_at, questions_asked)
+                VALUES (?, ?, 0)
+            """, (module_id, datetime.now().isoformat()))
+            session.db_conn.commit()
+            
+            # Save learning insight
+            if enhanced_memory:
+                enhanced_memory.save_learning_insight(module_id, f"Started module: {module_info['title']}")
+                
+    except Exception as e:
+        print(f"{Colors.RED}❌ Error accessing module progress: {e}{Colors.END}")
+        return
     
     print(f"\n{Colors.BOLD}💭 Remember: I won't give you direct answers.{Colors.END}")
     print(f"{Colors.BOLD}💭 I'll guide you to discover insights through questions.{Colors.END}")
@@ -629,7 +1161,7 @@ def generate_socratic_question(module_id, module_info, context=None):
         return f"Let's explore {module_info['title']}. What's your first thought when you hear about {module_info['title'].lower()}?"
 
 def generate_socratic_response(module_id, module_info, user_input):
-    """Generate a Socratic response to student input"""
+    """Generate enhanced Socratic response with adaptive context"""
     if not session.api_key_set:
         return "That's interesting. What makes you think that? Can you tell me more about your reasoning?"
     
@@ -647,6 +1179,20 @@ def generate_socratic_response(module_id, module_info, user_input):
     for msg_type, content in reversed(cursor.fetchall()):
         role = "user" if msg_type == "user" else "assistant"
         context_messages.append({"role": role, "content": content})
+    
+    # Get adaptive context from enhanced memory system
+    adaptive_context = ""
+    if enhanced_memory:
+        adaptive_context = enhanced_memory.get_adaptive_context(module_id)
+        
+        # Analyze learning patterns for insights
+        patterns = enhanced_memory.analyze_learning_patterns()
+        if patterns and module_id in patterns.get('module_patterns', {}):
+            pattern = patterns['module_patterns'][module_id]
+            if pattern['engagement_level'] < 0.5:
+                adaptive_context += " Focus on engaging the student with interactive examples."
+            if pattern['curiosity_level'] > 0.8:
+                adaptive_context += " The student is highly curious - provide deeper explanations."
     
     system_prompts = {
         1: "You are Harv, a Socratic tutor for communication theory. Guide students to discover the four worlds of communication through strategic questioning about perception, reality, and media influence.",
@@ -667,9 +1213,15 @@ def generate_socratic_response(module_id, module_info, user_input):
     }
     
     try:
+        base_prompt = system_prompts.get(module_id, "You are a Socratic tutor. Ask questions to guide learning, never give direct answers.")
+        
+        # Integrate adaptive context
+        if adaptive_context:
+            base_prompt += f"\n\nAdaptive Teaching Context: {adaptive_context}"
+        
         messages = [
             {"role": "system", "content": f"""
-            {system_prompts.get(module_id, "You are a Socratic tutor. Ask questions to guide learning, never give direct answers.")}
+            {base_prompt}
             
             IMPORTANT RULES:
             1. NEVER give direct answers or explanations
