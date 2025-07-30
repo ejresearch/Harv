@@ -1,6 +1,6 @@
-# 🌱 HARV - AI-Powered Socratic Learning Platform
+# 🌱 Harv_PI - AI-Powered Socratic Learning Platform
 
-**HARV** (Holistic AI Resource for Virtual education) is a sophisticated educational platform that uses AI-powered Socratic questioning to guide students through mass communication concepts. Instead of providing direct answers, HARV asks strategic questions that lead students to discover knowledge themselves.
+**Harv_PI** (Holistic AI Resource for Virtual Programming Instruction) is a sophisticated educational platform that uses AI-powered Socratic questioning to guide students through mass communication concepts. Instead of providing direct answers, HARV asks strategic questions that lead students to discover knowledge themselves.
 
 ## 🎯 Key Features
 
@@ -26,8 +26,8 @@ Before you begin, ensure you have:
 
 ```bash
 # Clone the repository
-git clone [repository-url]
-cd harv
+git clone https://github.com/YOUR_USERNAME/Harv_PI.git
+cd Harv_PI
 
 # Create Python virtual environment
 python3 -m venv harv_venv
